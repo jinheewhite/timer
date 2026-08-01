@@ -15,9 +15,12 @@
   :root{
     --ink:#16212B; --panel:#1E2B37; --raise:#263746;
     --line:rgba(140,168,190,.18); --chalk:#E8EDF1; --dim:#8FA5B6;
-    --amber:#F0A93B; --mint:#6FD6B4;
+    --amber:#F0A93B; --mint:#6FD6B4; --red:#E86A5A;
     --z:1;
   }
+  /* 글자 크기 — 보통 / 크게 / 최대 */
+  body.s2{--z:1.16}
+  body.s3{--z:1.34}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html{background:var(--ink)}
   html,body{margin:0;min-height:100%}
@@ -27,47 +30,43 @@
     -webkit-user-select:none;user-select:none;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     overflow-x:hidden;overflow-y:auto;
-    overscroll-behavior:none;-webkit-overflow-scrolling:touch;
-    touch-action:manipulation;
+    overscroll-behavior:none;-webkit-overflow-scrolling:touch;touch-action:manipulation;
   }
   .app{
     width:100%;margin:0 auto;
     max-width:clamp(280px, calc(min(94vw, 55vh) * var(--z)), 640px);
-    padding:clamp(10px, 2vh, 24px);
-    display:flex;flex-direction:column;gap:clamp(8px, 1.5vh, 16px);
-    min-height:100svh;justify-content:center;
+    padding:clamp(10px,2vh,24px);
+    display:flex;flex-direction:column;gap:clamp(8px,1.5vh,16px);
+    min-height:100svh;
   }
 
   /* 모드 전환 */
   .seg{display:grid;grid-template-columns:1fr 1fr 3.4em;gap:4px;
        background:rgba(0,0,0,.25);border-radius:999px;padding:4px}
-  .seg .szbtn{color:var(--dim);font-weight:700}
-  .seg .szbtn:active{background:var(--raise)}
-
-  /* 글자 크기 — 보통 / 크게 / 최대 */
-  body.s2{--z:1.16}
-  body.s3{--z:1.34}
   .seg button{
     appearance:none;border:0;background:transparent;color:var(--dim);
     border-radius:999px;padding:clamp(8px,1.5vh,18px) 0;cursor:pointer;
-    font:600 clamp(12px,calc(1.9vh*var(--z)),20px)/1 -apple-system,sans-serif;transition:background .18s ease,color .18s ease;
+    font:600 clamp(12px,calc(1.9vh*var(--z)),20px)/1 -apple-system,sans-serif;
+    transition:background .18s ease,color .18s ease;
   }
   .seg button.on{background:var(--raise);color:var(--chalk)}
   .seg button:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+  .seg .szbtn{color:var(--dim);font-weight:700}
+  .seg .szbtn:active{background:var(--raise)}
 
-  /* 디스플레이 */
+  /* 표시창 */
   .readout{
     background:var(--panel);border:1px solid var(--line);border-radius:18px;
-    padding:clamp(12px,2.2vh,22px) clamp(14px,2.4vh,24px);display:flex;flex-direction:column;gap:8px;
+    padding:clamp(12px,2.2vh,22px) clamp(14px,2.4vh,24px);
+    display:flex;flex-direction:column;gap:8px;
   }
   .trail{
-    font:400 clamp(11px,calc(1.6vh*var(--z)),19px)/1.2 ui-monospace,"SF Mono",Menlo,monospace;color:var(--dim);
-    min-height:17px;white-space:nowrap;overflow:hidden;
+    font:400 clamp(11px,calc(1.6vh*var(--z)),19px)/1.2 ui-monospace,"SF Mono",Menlo,monospace;
+    color:var(--dim);min-height:17px;white-space:nowrap;overflow:hidden;
     display:flex;align-items:center;justify-content:space-between;gap:10px;
   }
   .trail span{overflow:hidden;text-overflow:ellipsis}
-  .wl{font:500 11px/1 -apple-system,sans-serif;color:var(--dim);
-      opacity:0;transition:opacity .25s ease}
+  .wl{font:500 11px/1 -apple-system,sans-serif;color:var(--dim);opacity:0;transition:opacity .25s ease}
   .wl.on{opacity:1;color:var(--mint)}
   .wl.warn{opacity:1;color:var(--amber)}
   .value{
@@ -78,34 +77,50 @@
     display:flex;align-items:center;justify-content:flex-end;
   }
   .value #vin{white-space:nowrap;flex:0 0 auto}
-  .value .off{color:var(--dim);opacity:.45}
-  /* 타이머 작동 중 — 남은 시간을 크게 */
-  body.running .value{font-size:clamp(66px,calc(15vh*var(--z)),176px);letter-spacing:-.04em}
-  .fld{display:inline-block;padding:0 6px;cursor:pointer;
-       border-bottom:4px solid transparent;transition:border-color .18s ease,color .18s ease}
-  .fld.on{border-bottom-color:var(--amber)}
-  .fld.dim{color:var(--dim);opacity:.5}
-  .units{display:flex;justify-content:flex-end;gap:0;margin-top:-2px}
-  .units span{font:500 clamp(9px,calc(1.25vh*var(--z)),15px)/1 -apple-system,sans-serif;color:var(--dim);
-              width:2.2ch;text-align:center;padding:0 6px}
-  .units.hide{visibility:hidden}
-  .bar{height:3px;background:rgba(140,168,190,.16);border-radius:2px;overflow:hidden;margin-top:4px}
-  .bar i{display:block;height:100%;width:0;background:var(--amber);
-         border-radius:2px;transition:width .25s linear}
-  .bar.done i{background:var(--mint)}
-  .bar.hide{visibility:hidden}
+
+  /* 시·분·초 입력 */
+  .tset{display:inline-flex;align-items:flex-end}
+  .tcol{display:inline-flex;flex-direction:column;align-items:center}
+  .tlab{font:500 clamp(10px,calc(1.4vh*var(--z)),15px)/1 -apple-system,sans-serif;
+        color:var(--dim);margin-bottom:clamp(4px,.9vh,9px);letter-spacing:.05em}
+  .tsep{padding:0 clamp(2px,.6vw,6px);opacity:.4}
+  .pair{display:inline-block;padding:0 clamp(3px,1vw,8px);cursor:pointer;
+        border-bottom:4px solid transparent;transition:border-color .18s ease}
+  .pair.on{border-bottom-color:var(--amber)}
+  .pair.off{color:var(--dim);opacity:.4}
+
+  /* 원형 눈금판 */
+  .dial{display:none;flex-direction:column;align-items:center;justify-content:center;
+        position:relative;padding:clamp(4px,1vh,12px) 0}
+  .dial.on{display:flex}
+  .dwrap{position:relative;width:clamp(210px,calc(34vh*var(--z)),380px);aspect-ratio:1;
+         display:grid;place-items:center}
+  .dwrap svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+  .tick{stroke:rgba(140,168,190,.22);stroke-width:3;stroke-linecap:round}
+  .tick.act{stroke:var(--amber)}
+  .tick.done{stroke:var(--mint)}
+  .dtext{position:relative;text-align:center;line-height:1}
+  .dset{font:500 clamp(12px,calc(1.9vh*var(--z)),20px)/1 -apple-system,sans-serif;
+        color:var(--dim);margin-bottom:clamp(8px,1.6vh,16px)}
+  .dleft{font:600 clamp(38px,calc(7.4vh*var(--z)),88px)/1 ui-monospace,"SF Mono",Menlo,monospace;
+         font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+  .dend{font:500 clamp(11px,calc(1.7vh*var(--z)),18px)/1 -apple-system,sans-serif;
+        color:var(--dim);margin-top:clamp(8px,1.6vh,16px)}
+  .dend.off{visibility:hidden}
 
   /* 값 전달 바 */
   .bridge{
     appearance:none;width:100%;border:1px dashed var(--line);background:transparent;
     color:var(--dim);border-radius:12px;padding:clamp(8px,1.4vh,17px);cursor:pointer;
-    font:500 clamp(11px,calc(1.6vh*var(--z)),18px)/1 -apple-system,sans-serif;transition:color .15s ease,border-color .15s ease;
+    font:500 clamp(11px,calc(1.6vh*var(--z)),18px)/1 -apple-system,sans-serif;
+    transition:color .15s ease,border-color .15s ease;
   }
   .bridge:active{color:var(--chalk);border-color:var(--chalk)}
   .bridge:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
 
   /* 키패드 */
   .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,1.1vh,13px)}
+  .keys.hide{display:none}
   .key{
     appearance:none;border:1px solid var(--line);background:var(--raise);color:var(--chalk);
     border-radius:14px;cursor:pointer;
@@ -117,13 +132,12 @@
   .key:active{transform:scale(.96);background:#31465a}
   .key:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
   .key.fn{background:transparent;color:var(--dim)}
-  .key.ac{background:rgba(232,106,90,.12);color:#E86A5A;
+  .key.ac{background:rgba(232,106,90,.12);color:var(--red);
           border-color:rgba(232,106,90,.5);font-weight:700}
-  .key.ac:active{background:#E86A5A;color:#2B0E0A}
+  .key.ac:active{background:var(--red);color:#2B0E0A}
   .key.op{background:rgba(240,169,59,.09);color:var(--amber);border-color:rgba(240,169,59,.55);
           font-weight:400;line-height:1;font-family:-apple-system,sans-serif;
           font-size:clamp(21px,calc(3.4vh*var(--z)),38px)}
-  /* 타이머 모드는 '+1분' 같은 글자라 작게 */
   .keys.tmode .key.op{font-weight:700;font-size:clamp(13px,calc(2.1vh*var(--z)),23px)}
   .key.op.armed{background:var(--amber);color:#16212B;border-color:var(--amber)}
   .key.eq{background:var(--mint);color:#12291F;border-color:var(--mint);font-weight:700;
@@ -131,32 +145,26 @@
   .key.eq.running{background:var(--amber);color:#2B1D06;border-color:var(--amber)}
   .key.mute{opacity:.28;pointer-events:none}
 
-  /* 타이머 작동 중 — 원형 버튼 */
-  .keys.hide{display:none}
+  /* 작동 중 원형 버튼 */
   .run{display:none;grid-template-columns:1fr 1fr;place-items:center;
-       gap:clamp(12px,3vh,28px);
-       min-height:calc(5 * clamp(42px,calc(7.6vh*var(--z)),94px)
-                     + 4 * clamp(6px,1.1vh,13px))}
+       gap:clamp(12px,3vh,28px)}
   .run.on{display:grid}
   .rbtn{
     appearance:none;cursor:pointer;border-radius:50%;
-    width:clamp(66px,calc(12vh*var(--z)),104px);aspect-ratio:1;
-    font:600 clamp(13px,calc(1.8vh*var(--z)),18px)/1 -apple-system,sans-serif;
+    width:clamp(78px,calc(14vh*var(--z)),124px);aspect-ratio:1;
+    font:600 clamp(13px,calc(1.9vh*var(--z)),20px)/1 -apple-system,sans-serif;
     transition:transform .07s ease,background .15s ease;
   }
   .rbtn:active{transform:scale(.94)}
   .rbtn:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
-  .rbtn.cancel{background:rgba(140,168,190,.12);color:var(--chalk);
-               border:1px solid var(--line)}
+  .rbtn.cancel{background:rgba(140,168,190,.12);color:var(--chalk);border:1px solid var(--line)}
   .rbtn.cancel:active{background:rgba(140,168,190,.28)}
-  .rbtn.act{background:rgba(240,169,59,.14);color:var(--amber);
-            border:1px solid rgba(240,169,59,.55)}
-  .rbtn.act.resume{background:rgba(111,214,180,.14);color:var(--mint);
-                   border-color:rgba(111,214,180,.55)}
+  .rbtn.act{background:rgba(240,169,59,.14);color:var(--amber);border:1px solid rgba(240,169,59,.55)}
+  .rbtn.act.resume{background:rgba(111,214,180,.14);color:var(--mint);border-color:rgba(111,214,180,.55)}
 
-  .credit{text-align:center;color:var(--dim);opacity:.55;
-          font:400 clamp(10px,calc(1.3vh*var(--z)),15px)/1 -apple-system,sans-serif;
-          letter-spacing:.04em}
+  .credit{margin-top:auto;padding-top:clamp(6px,1.2vh,14px);
+          text-align:center;color:var(--dim);opacity:.55;letter-spacing:.04em;
+          font:400 clamp(10px,calc(1.3vh*var(--z)),15px)/1 -apple-system,sans-serif}
 
   body.ring{animation:flash .5s steps(2,end) 6}
   @keyframes flash{0%,100%{background:var(--ink)}50%{background:#2C3A2F}}
@@ -172,14 +180,23 @@
     <button id="mSize" class="szbtn" aria-label="글자 크기">가</button>
   </div>
 
-  <div class="readout">
+  <div class="readout" id="readout">
     <div class="trail">
       <span class="wl" id="wl"></span>
       <span id="trailText"></span>
     </div>
     <div class="value" id="value" aria-live="polite"><span id="vin">0</span></div>
-    <div class="units hide" id="units"><span>분</span><span></span><span>초</span></div>
-    <div class="bar hide" id="bar"><i id="fill"></i></div>
+  </div>
+
+  <div class="dial" id="dial">
+    <div class="dwrap">
+      <svg viewBox="0 0 240 240" aria-hidden="true"><g id="ticks"></g></svg>
+      <div class="dtext">
+        <div class="dset" id="dSet"></div>
+        <div class="dleft" id="dLeft">00:00</div>
+        <div class="dend" id="dEnd"></div>
+      </div>
+    </div>
   </div>
 
   <button class="bridge" id="bridge">계산 결과를 타이머 시간으로 보내기</button>
@@ -212,7 +229,7 @@
   </div>
 
   <div class="run" id="run">
-    <button class="rbtn cancel" id="rCancel">해제</button>
+    <button class="rbtn cancel" id="rCancel">취소</button>
     <button class="rbtn act" id="rGo">일시정지</button>
   </div>
 
@@ -224,11 +241,11 @@
 (function(){
   'use strict';
   var $=function(id){return document.getElementById(id)};
-  var $val=$('value'), $vin=$('vin'), $trail=$('trailText'), $wl=$('wl'), $units=$('units'),
-      $bar=$('bar'), $fill=$('fill'), $bridge=$('bridge');
+  var $val=$('value'), $vin=$('vin'), $trail=$('trailText'), $wl=$('wl'),
+      $bridge=$('bridge'), $readout=$('readout'), $dial=$('dial');
   var mode='calc';
 
-  /* ── 계산기 상태 ── */
+  /* ── 계산기 ───────────────────────── */
   var cur='0', acc=null, op=null, fresh=false;
   var SYM={add:'+',sub:'−',mul:'×',div:'÷'}, RAW={add:'+',sub:'-',mul:'*',div:'/'};
 
@@ -245,90 +262,125 @@
     return o==='+'?a+b : o==='-'?a-b : o==='*'?a*b : (b===0?NaN:a/b);
   }
 
-  /* ── 타이머 상태 ── */
-  var MIN=60000, tmin='', tsec='', field='min',
-      total=0, left=0, running=false, endAt=0, tick=null, lock=null;
+  /* ── 타이머 ───────────────────────── */
+  var MIN=60000, F={hr:'',min:'',sec:''}, field='min';
+  var total=0, left=0, running=false, endAt=0, tick=null, lock=null;
 
   function entryMs(){
-    return ((parseInt(tmin||'0',10))*60 + (parseInt(tsec||'0',10)))*1000;
+    return ((+(F.hr||0))*3600 + (+(F.min||0))*60 + (+(F.sec||0)))*1000;
   }
-  function msToFields(ms){
+  function msToEntry(ms){
     var s=Math.max(0,Math.round(ms/1000));
-    tmin=String(Math.floor(s/60));
-    tsec=String(s%60).padStart(2,'0');
+    F.hr =String(Math.min(99,Math.floor(s/3600))).padStart(2,'0');
+    F.min=String(Math.floor(s%3600/60)).padStart(2,'0');
+    F.sec=String(s%60).padStart(2,'0');
   }
   function editing(){ return !running && !endAt; }
+  function pad2(v){ return String(v||'0').padStart(2,'0'); }
+
   function timeText(ms){
     var s=Math.max(0,Math.ceil(ms/1000));
     var h=Math.floor(s/3600), m=Math.floor(s%3600/60), q=s%60;
     var out=String(m).padStart(2,'0')+':'+String(q).padStart(2,'0');
     return h>0 ? String(h)+':'+out : out;
   }
+  function durText(ms){
+    var s=Math.round(ms/1000), h=Math.floor(s/3600), m=Math.floor(s%3600/60), q=s%60;
+    var p=[];
+    if(h) p.push(h+'시간');
+    if(m) p.push(m+'분');
+    if(q||!p.length) p.push(q+'초');
+    return p.join(' ');
+  }
+  function endText(ms){
+    var d=new Date(Date.now()+ms), h=d.getHours();
+    var ap = h<12 ? '오전' : '오후';
+    var hh = h%12; if(hh===0) hh=12;
+    return '🔔 '+ap+' '+hh+':'+String(d.getMinutes()).padStart(2,'0');
+  }
 
-  /* ── 그리기 ── */
+  /* 눈금 60개 생성 */
+  var TICKS=60, tickEls=[];
+  (function(){
+    var g=$('ticks'), ns='http://www.w3.org/2000/svg';
+    for(var i=0;i<TICKS;i++){
+      var l=document.createElementNS(ns,'line');
+      l.setAttribute('x1',120); l.setAttribute('y1',10);
+      l.setAttribute('x2',120); l.setAttribute('y2',24);
+      l.setAttribute('class','tick');
+      l.setAttribute('transform','rotate('+(i*360/TICKS)+' 120 120)');
+      g.appendChild(l); tickEls.push(l);
+    }
+  })();
+
+  function drawDial(){
+    var f = total>0 ? Math.max(0,left/total) : 0;
+    var n = Math.ceil(f*TICKS);
+    var done = (endAt>0 && left<=0);
+    for(var i=0;i<TICKS;i++){
+      tickEls[i].setAttribute('class','tick'+(done?' done':(i<n?' act':'')));
+    }
+    $('dSet').textContent = durText(total);
+    $('dLeft').textContent = timeText(left);
+    var e=$('dEnd');
+    if(running){ e.classList.remove('off'); e.textContent=endText(left); }
+    else if(done){ e.classList.remove('off'); e.textContent='완료'; }
+    else { e.classList.remove('off'); e.textContent='일시정지'; }
+  }
+
+  /* ── 그리기 ───────────────────────── */
   function draw(){
     var ops=document.querySelectorAll('.key.op'), i;
 
     if(mode==='calc'){
       $vin.textContent = cur==='오류' ? '오류' : fmt(parseFloat(cur))+(/\.$/.test(cur)?'.':'');
       $trail.textContent = acc===null ? '' : fmt(acc)+' '+SYM[op];
-      $bar.classList.add('hide');
-      $units.classList.add('hide');
       for(i=0;i<ops.length;i++)
         ops[i].classList.toggle('armed', op!==null && fresh && ops[i].dataset.k===op);
       $bridge.textContent='계산 결과를 타이머 시간으로 보내기';
     } else {
-      if(editing()){
-        $vin.innerHTML =
-          '<span class="fld'+(field==='min'?' on':' dim')+'" data-f="min">'+
-            (tmin||'0').padStart(2,'0')+'</span>'+
-          '<span>:</span>'+
-          '<span class="fld'+(field==='sec'?' on':' dim')+'" data-f="sec">'+
-            (tsec||'0').padStart(2,'0')+'</span>';
-        $trail.textContent='숫자를 눌러 직접 입력';
-        $units.classList.remove('hide');
-      } else {
-        $vin.textContent = timeText(left);
-        $trail.textContent = running ? '진행 중' : (left<=0 ? '완료' : '일시정지');
-        $units.classList.add('hide');
-      }
-      $bar.classList.remove('hide');
-      $bar.classList.toggle('done', endAt>0 && left<=0);
-      $fill.style.width = (total>0 ? Math.max(0,left/total)*100 : 0)+'%';
       for(i=0;i<ops.length;i++) ops[i].classList.remove('armed');
       $bridge.textContent='남은 시간을 계산기로 가져오기';
+      if(editing()){
+        $vin.innerHTML = '<span class="tset">' +
+          col('시간','hr') + '<span class="tsep">:</span>' +
+          col('분',  'min') + '<span class="tsep">:</span>' +
+          col('초',  'sec') + '</span>';
+        $trail.textContent='칸을 눌러 고르고 입력하세요';
+      } else {
+        drawDial();
+      }
     }
-    panels();
-    fitValue();
+    panels(); fitValue();
+  }
+  function col(label,f){
+    var v=F[f], cls='pair'+(field===f?' on':'')+(v===''?' off':'');
+    return '<span class="tcol"><span class="tlab">'+label+'</span>'+
+           '<span class="'+cls+'" data-f="'+f+'">'+pad2(v)+'</span></span>';
   }
 
-  /* 숫자가 길면 잘리지 않도록 자동 축소 */
   var lastFit=null;
   function fitValue(force){
-    var key=mode+'|'+(document.body.classList.contains('running')?'r':'e')+'|'+$vin.textContent;
-    if(!force && key===lastFit) return;   // 같은 내용이면 다시 재지 않음 (깜빡임 방지)
+    if(mode==='timer' && !editing()) return;
+    var key=mode+'|'+$vin.textContent;
+    if(!force && key===lastFit) return;
     lastFit=key;
-    $val.style.fontSize='';
-    var avail=$val.clientWidth;
-    if(!avail) return;
-    avail=$val.getBoundingClientRect().width - 4;   // 여유 4px
-    var need=$vin.getBoundingClientRect().width;    // 글자 자체의 실제 너비
+    $val.style.fontSize=''; $val.style.justifyContent='';
+    var avail=$val.getBoundingClientRect().width-4;
+    var need=$vin.getBoundingClientRect().width;
     if(need>avail && avail>0){
       var base=parseFloat(getComputedStyle($val).fontSize);
       $val.style.fontSize=Math.max(11,Math.floor(base*avail/need*100)/100)+'px';
-      // 그래도 넘치면 왼쪽부터 보이도록
       if($vin.getBoundingClientRect().width>avail+1) $val.style.justifyContent='flex-start';
-      else $val.style.justifyContent='';
-    } else {
-      $val.style.justifyContent='';
     }
   }
 
   function panels(){
     var run = (mode==='timer' && !editing());
+    $readout.style.display = run ? 'none' : '';
+    $dial.classList.toggle('on', run);
     $('keys').classList.toggle('hide', run);
     $('run').classList.toggle('on', run);
-    document.body.classList.toggle('running', run);
     if(run){
       var g=$('rGo');
       g.textContent = running ? '일시정지' : (left<=0 ? '다시 시작' : '계속');
@@ -336,24 +388,20 @@
     }
   }
 
-  /* ── 모드 ── */
+  /* ── 모드 ─────────────────────────── */
   var LABEL={
     calc:{clear:'AC',back:'⌫',dbl0:'00',div:'÷',mul:'×',sub:'−',add:'+',pct:'%',dot:'.',go:'='},
-    timer:{clear:'AC',back:'⌫',dbl0:'00',div:'+1분',mul:'+5분',sub:'−1분',add:'리셋',pct:'',dot:'분↔초',go:'시작'}
+    timer:{clear:'AC',back:'⌫',dbl0:'00',div:'+1분',mul:'+5분',sub:'−1분',add:'리셋',pct:'',dot:'칸이동',go:'시작'}
   };
   function setMode(m){
-    mode=m;
+    mode=m; lastFit=null;
     $('mCalc').classList.toggle('on',m==='calc');
     $('mTime').classList.toggle('on',m==='timer');
     $('keys').classList.toggle('tmode', m==='timer');
-    lastFit=null;
     var keys=document.querySelectorAll('.key');
     for(var i=0;i<keys.length;i++){
       var k=keys[i].dataset.k, L=LABEL[m][k];
-      if(L!==undefined){
-        keys[i].textContent=L;
-        keys[i].classList.toggle('mute', L==='');
-      }
+      if(L!==undefined){ keys[i].textContent=L; keys[i].classList.toggle('mute', L===''); }
     }
     syncGo(); draw();
   }
@@ -364,7 +412,7 @@
     g.textContent = running ? '일시정지' : (endAt && left>0 ? '이어서' : '시작');
   }
 
-  /* ── 타이머 동작 ── */
+  /* ── 타이머 동작 ───────────────────── */
   function start(){
     if(left<=0){ total=entryMs(); left=total; }
     if(left<=0) return;
@@ -382,12 +430,12 @@
   }
   function resetTimer(){
     running=false; clearInterval(tick); tick=null; wake(false);
-    left=total; endAt=0; msToFields(total); syncGo(); draw();
+    left=total; endAt=0; msToEntry(total); syncGo(); draw();
   }
   function bump(ms){
     if(left+ms<0) return;
     total=Math.max(0,total+ms); left=Math.max(0,left+ms);
-    if(running) endAt+=ms; else msToFields(left);
+    if(running) endAt+=ms; else msToEntry(left);
     syncGo(); draw();
   }
   function badge(state){
@@ -396,19 +444,13 @@
     $wl.className='wl'+(state==='on'?' on':(state==='off'?'':' warn'));
   }
   function wake(on){
-    if(!on){
-      if(lock){ try{lock.release()}catch(e){} lock=null; }
-      badge('off'); return;
-    }
+    if(!on){ if(lock){ try{lock.release()}catch(e){} lock=null; } badge('off'); return; }
     if(!navigator.wakeLock){ badge('none'); return; }
     if(lock) return;
     try{
       navigator.wakeLock.request('screen').then(function(s){
         lock=s; badge('on');
-        s.addEventListener('release',function(){
-          lock=null;
-          badge(running?'failed':'off');
-        });
+        s.addEventListener('release',function(){ lock=null; badge(running?'failed':'off'); });
       }).catch(function(){ badge('failed'); });
     }catch(e){ badge('failed'); }
   }
@@ -429,11 +471,9 @@
     }catch(e){}
   }
 
-  /* ── 키 입력 ── */
-  function press(k){
-    if(mode==='calc') return calcKey(k);
-    return timerKey(k);
-  }
+  /* ── 키 입력 ──────────────────────── */
+  function press(k){ return mode==='calc' ? calcKey(k) : timerKey(k); }
+
   function calcKey(k){
     if(/^\d$/.test(k)){
       if(cur==='오류') cur='0';
@@ -457,17 +497,19 @@
     }
     else if(k==='clear'){ cur='0'; acc=null; op=null; fresh=false; }
     else if(k==='back'){ if(!fresh&&cur!=='오류'){ cur=cur.length>1?cur.slice(0,-1):'0'; if(cur==='-')cur='0'; } }
-    else if(k==='pct'){
-      var v=parseFloat(cur);
-      cur=String(acc!==null&&(op==='add'||op==='sub') ? acc*v/100 : v/100); fresh=false;
-    }
     else if(k==='dbl0'){
       if(cur==='오류') cur='0';
       if(fresh){ cur='0'; fresh=false; }
       else if(cur!=='0' && cur.length<13) cur+='00';
     }
+    else if(k==='pct'){
+      var v=parseFloat(cur);
+      cur=String(acc!==null&&(op==='add'||op==='sub') ? acc*v/100 : v/100); fresh=false;
+    }
     draw();
   }
+
+  var ORDER=['hr','min','sec'];
   function timerKey(k){
     if(k==='go') return running?pause():start();
     if(k==='div') return bump(MIN);
@@ -475,69 +517,55 @@
     if(k==='sub') return bump(-MIN);
     if(k==='add') return resetTimer();
     if(running) return;
-    if(k==='dot'){ field = field==='min'?'sec':'min'; return draw(); }
+    if(k==='dot'){ field=ORDER[(ORDER.indexOf(field)+1)%3]; return draw(); }
     if(/^\d$/.test(k)){
-      if(!editing()){ endAt=0; }
-      if(field==='min'){ tmin=((tmin==='0'?'':tmin)+k).slice(-3); }
-      else { var v=((tsec==='00'||tsec==='0'?'':tsec)+k).slice(-2);
-             tsec = (+v>59) ? k : v; }
+      var cap = field==='hr' ? 99 : 59;
+      var v=((F[field]==='00'?'':F[field])+k).slice(-2);
+      if(parseInt(v,10)>cap) v=k;
+      F[field]=v;
     }
-    else if(k==='dbl0'){
-      if(field==='min') tmin=((tmin==='0'?'':tmin)+'00').slice(-3);
-      else tsec='00';
-    }
-    else if(k==='back'){
-      if(field==='min') tmin=tmin.slice(0,-1); else tsec=tsec.slice(0,-1);
-    }
-    else if(k==='clear'){ tmin=''; tsec=''; field='min'; }
+    else if(k==='dbl0') F[field]='00';
+    else if(k==='back') F[field]=F[field].slice(0,-1);
+    else if(k==='clear'){ F.hr=''; F.min=''; F.sec=''; field='min'; }
     else return;
     total=entryMs(); left=total; endAt=0; syncGo(); draw();
   }
 
-  /* ── 값 전달 ── */
+  /* ── 값 전달 ──────────────────────── */
   $bridge.addEventListener('click',function(){
     if(mode==='calc'){
       var n=parseFloat(cur);
       if(!isFinite(n)||n<=0) return;
-      msToFields(Math.round(n*MIN));
+      msToEntry(Math.round(n*MIN));
       total=entryMs(); left=total; endAt=0; running=false;
       clearInterval(tick); tick=null;
       setMode('timer');
     } else {
       var ms=running?Math.max(0,endAt-Date.now()):left;
       cur=String(Math.round(ms/600)/100); fresh=true; acc=null; op=null;
-      /* 세로 고정 시도 (안드로이드 설치형에서 동작) */
-  try{
-    if(screen.orientation && screen.orientation.lock)
-      screen.orientation.lock('portrait').catch(function(){});
-  }catch(e){}
-
-  window.addEventListener('resize',function(){ fitValue(true); });
-
-  setMode('calc');
+      setMode('calc');
       $trail.textContent='타이머에서 가져옴 (분)';
     }
   });
 
   $val.addEventListener('click',function(e){
-    var f=e.target.closest('.fld');
-    if(f && mode==='timer'){ field=f.dataset.f; draw(); }
+    var p=e.target.closest('.pair');
+    if(p && mode==='timer'){ field=p.dataset.f; draw(); }
   });
-
   $('keys').addEventListener('click',function(e){
     var b=e.target.closest('button'); if(b) press(b.dataset.k);
   });
+  $('rCancel').addEventListener('click',resetTimer);
+  $('rGo').addEventListener('click',function(){ running?pause():start(); });
+
   var size=1;
   $('mSize').addEventListener('click',function(){
     size = size===3 ? 1 : size+1;
     document.body.classList.remove('s2','s3');
     if(size>1) document.body.classList.add('s'+size);
-    this.textContent = ['가','가+','가++'][size-1];
+    this.textContent=['가','가+','가++'][size-1];
+    lastFit=null; fitValue(true);
   });
-
-  $('rCancel').addEventListener('click',resetTimer);
-  $('rGo').addEventListener('click',function(){ running?pause():start(); });
-
   $('mCalc').addEventListener('click',function(){setMode('calc')});
   $('mTime').addEventListener('click',function(){setMode('timer')});
 
@@ -556,6 +584,12 @@
   document.addEventListener('visibilitychange',function(){
     if(!document.hidden && running){ frame(); wake(true); }
   });
+  window.addEventListener('resize',function(){ fitValue(true); });
+
+  try{
+    if(screen.orientation && screen.orientation.lock)
+      screen.orientation.lock('portrait').catch(function(){});
+  }catch(e){}
 
   setMode('calc');
 })();
