@@ -129,6 +129,7 @@
     font-variant-numeric:tabular-nums;
     transition:transform .06s ease,background .12s ease,color .18s ease;
   }
+  .key{touch-action:none}
   .key:active{transform:scale(.96);background:#31465a}
   .key:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
   .key.fn{background:transparent;color:var(--dim)}
@@ -155,6 +156,7 @@
     font:600 clamp(13px,calc(1.9vh*var(--z)),20px)/1 -apple-system,sans-serif;
     transition:transform .07s ease,background .15s ease;
   }
+  .rbtn{touch-action:none}
   .rbtn:active{transform:scale(.94)}
   .rbtn:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
   .rbtn.cancel{background:rgba(140,168,190,.12);color:var(--chalk);border:1px solid var(--line)}
@@ -166,7 +168,7 @@
           text-align:center;color:var(--dim);opacity:.55;letter-spacing:.04em;
           font:400 clamp(10px,calc(1.3vh*var(--z)),15px)/1 -apple-system,sans-serif}
 
-  body.ring{animation:flash .5s steps(2,end) 6}
+  body.ring{animation:flash .7s steps(2,end) infinite}
   @keyframes flash{0%,100%{background:var(--ink)}50%{background:#2C3A2F}}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -416,6 +418,7 @@
   function start(){
     if(left<=0){ total=entryMs(); left=total; }
     if(left<=0) return;
+    ensureAudio(); stopAlarm();
     running=true; endAt=Date.now()+left;
     tick=setInterval(frame,200); wake(true); syncGo(); draw();
   }
@@ -454,21 +457,49 @@
       }).catch(function(){ badge('failed'); });
     }catch(e){ badge('failed'); }
   }
-  function alarm(){
-    document.body.classList.add('ring');
-    setTimeout(function(){document.body.classList.remove('ring')},3000);
+  var alarmTimer=null, ac=null;
+  function ensureAudio(){
     try{
-      var C=window.AudioContext||window.webkitAudioContext, ac=new C();
-      [0,.45,.9].forEach(function(d){
-        var o=ac.createOscillator(), g=ac.createGain();
-        o.type='sine'; o.frequency.value=880;
-        g.gain.setValueAtTime(.001,ac.currentTime+d);
-        g.gain.exponentialRampToValueAtTime(.35,ac.currentTime+d+.03);
-        g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d+.33);
-        o.connect(g); g.connect(ac.destination);
-        o.start(ac.currentTime+d); o.stop(ac.currentTime+d+.35);
-      });
+      if(!ac){ var C=window.AudioContext||window.webkitAudioContext; ac=new C(); }
+      if(ac.state==='suspended') ac.resume();
     }catch(e){}
+  }
+  function tone(t0,f,dur,vol){
+    var o=ac.createOscillator(), g=ac.createGain();
+    o.type='square'; o.frequency.value=f;
+    g.gain.setValueAtTime(.0001,t0);
+    g.gain.exponentialRampToValueAtTime(vol,t0+.012);
+    g.gain.setValueAtTime(vol,t0+dur-.04);
+    g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t0); o.stop(t0+dur+.03);
+  }
+  function burst(){
+    ensureAudio();
+    try{
+      var t=ac.currentTime;
+      for(var i=0;i<4;i++){                 // 한 번에 네 번씩
+        tone(t+i*.30, 988, .19, .95);       // 주음
+        tone(t+i*.30, 1319, .19, .55);      // 배음 — 더 크게 들리도록
+      }
+    }catch(e){}
+    try{ if(navigator.vibrate) navigator.vibrate([300,120,300,120,300]); }catch(e){}
+  }
+  function alarm(){
+    stopAlarm();
+    document.body.classList.add('ring');
+    burst();
+    var n=0;
+    alarmTimer=setInterval(function(){
+      n++;
+      if(n>=20){ stopAlarm(); return; }     // 약 30초 뒤 자동 정지
+      burst();
+    },1500);
+  }
+  function stopAlarm(){
+    if(alarmTimer){ clearInterval(alarmTimer); alarmTimer=null; }
+    document.body.classList.remove('ring');
+    try{ if(navigator.vibrate) navigator.vibrate(0); }catch(e){}
   }
 
   /* ── 키 입력 ──────────────────────── */
@@ -552,11 +583,20 @@
     var p=e.target.closest('.pair');
     if(p && mode==='timer'){ field=p.dataset.f; draw(); }
   });
-  $('keys').addEventListener('click',function(e){
-    var b=e.target.closest('button'); if(b) press(b.dataset.k);
-  });
-  $('rCancel').addEventListener('click',resetTimer);
-  $('rGo').addEventListener('click',function(){ running?pause():start(); });
+  function hitKey(e){
+    var b=e.target.closest('button');
+    if(!b) return;
+    e.preventDefault();
+    stopAlarm(); press(b.dataset.k);
+  }
+  if(window.PointerEvent){
+    $('keys').addEventListener('pointerdown',hitKey);
+  } else {
+    $('keys').addEventListener('touchstart',hitKey,{passive:false});
+    $('keys').addEventListener('click',hitKey);
+  }
+  $('rCancel').addEventListener('click',function(){ stopAlarm(); resetTimer(); });
+  $('rGo').addEventListener('click',function(){ stopAlarm(); running?pause():start(); });
 
   var size=1;
   $('mSize').addEventListener('click',function(){
