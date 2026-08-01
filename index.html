@@ -74,12 +74,12 @@
     font:600 clamp(28px,calc(6.4vh*var(--z)),76px)/1 ui-monospace,"SF Mono",Menlo,monospace;
     font-variant-numeric:tabular-nums;letter-spacing:-.02em;
     white-space:nowrap;overflow:hidden;
-    height:clamp(64px,calc(14vh*var(--z)),160px);
+    height:clamp(70px,calc(16vh*var(--z)),184px);
     display:flex;align-items:center;justify-content:flex-end;
   }
   .value .off{color:var(--dim);opacity:.45}
   /* 타이머 작동 중 — 남은 시간을 크게 */
-  body.running .value{font-size:clamp(60px,calc(13vh*var(--z)),152px);letter-spacing:-.04em}
+  body.running .value{font-size:clamp(66px,calc(15vh*var(--z)),176px);letter-spacing:-.04em}
   .fld{display:inline-block;padding:0 6px;cursor:pointer;
        border-bottom:4px solid transparent;transition:border-color .18s ease,color .18s ease}
   .fld.on{border-bottom-color:var(--amber)}
@@ -139,8 +139,8 @@
   .run.on{display:grid}
   .rbtn{
     appearance:none;cursor:pointer;border-radius:50%;
-    width:clamp(92px,calc(19vh*var(--z)),168px);aspect-ratio:1;
-    font:600 clamp(15px,calc(2.3vh*var(--z)),24px)/1 -apple-system,sans-serif;
+    width:clamp(66px,calc(12vh*var(--z)),104px);aspect-ratio:1;
+    font:600 clamp(13px,calc(1.8vh*var(--z)),18px)/1 -apple-system,sans-serif;
     transition:transform .07s ease,background .15s ease;
   }
   .rbtn:active{transform:scale(.94)}
@@ -233,8 +233,9 @@
 
   function fmt(n){
     if(!isFinite(n)) return '오류';
-    var s=String(Math.round(n*1e10)/1e10);
-    if(s.indexOf('e')>-1) return n.toPrecision(8);
+    var a=Math.abs(n);
+    if(a!==0 && (a>=1e12 || a<1e-6)) return n.toExponential(6).replace('e+','e');
+    var s=String(parseFloat(n.toFixed(8)));
     var p=s.split('.');
     p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
     return p.join('.');
@@ -297,6 +298,19 @@
       $bridge.textContent='남은 시간을 계산기로 가져오기';
     }
     panels();
+    fitValue();
+  }
+
+  /* 숫자가 길면 잘리지 않도록 자동 축소 */
+  function fitValue(){
+    $val.style.fontSize='';
+    var avail=$val.clientWidth;
+    if(!avail) return;
+    var need=$val.scrollWidth;
+    if(need>avail){
+      var base=parseFloat(getComputedStyle($val).fontSize);
+      $val.style.fontSize=Math.max(13,Math.floor(base*avail/need))+'px';
+    }
   }
 
   function panels(){
