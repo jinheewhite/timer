@@ -302,12 +302,16 @@
   }
 
   /* 숫자가 길면 잘리지 않도록 자동 축소 */
-  function fitValue(){
+  var lastFit=null;
+  function fitValue(force){
+    var key=mode+'|'+(document.body.classList.contains('running')?'r':'e')+'|'+$val.textContent;
+    if(!force && key===lastFit) return;   // 같은 내용이면 다시 재지 않음 (깜빡임 방지)
+    lastFit=key;
     $val.style.fontSize='';
     var avail=$val.clientWidth;
     if(!avail) return;
     var need=$val.scrollWidth;
-    if(need>avail){
+    if(need>avail+1){
       var base=parseFloat(getComputedStyle($val).fontSize);
       $val.style.fontSize=Math.max(13,Math.floor(base*avail/need))+'px';
     }
@@ -335,6 +339,7 @@
     $('mCalc').classList.toggle('on',m==='calc');
     $('mTime').classList.toggle('on',m==='timer');
     $('keys').classList.toggle('tmode', m==='timer');
+    lastFit=null;
     var keys=document.querySelectorAll('.key');
     for(var i=0;i<keys.length;i++){
       var k=keys[i].dataset.k, L=LABEL[m][k];
@@ -494,7 +499,9 @@
     } else {
       var ms=running?Math.max(0,endAt-Date.now()):left;
       cur=String(Math.round(ms/600)/100); fresh=true; acc=null; op=null;
-      setMode('calc');
+      window.addEventListener('resize',function(){ fitValue(true); });
+
+  setMode('calc');
       $trail.textContent='타이머에서 가져옴 (분)';
     }
   });
