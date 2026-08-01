@@ -111,13 +111,23 @@
   .key:active{transform:scale(.96);background:#31465a}
   .key:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
   .key.fn{background:transparent;color:var(--dim)}
-  .key.op{background:transparent;color:var(--amber);border-color:rgba(240,169,59,.35);
-          font-size:clamp(13px,calc(2.1vh*var(--z)),23px);font-family:-apple-system,sans-serif}
+  .key.ac{background:rgba(232,106,90,.12);color:#E86A5A;
+          border-color:rgba(232,106,90,.5);font-weight:700}
+  .key.ac:active{background:#E86A5A;color:#2B0E0A}
+  .key.op{background:rgba(240,169,59,.09);color:var(--amber);border-color:rgba(240,169,59,.55);
+          font-weight:400;line-height:1;font-family:-apple-system,sans-serif;
+          font-size:clamp(21px,calc(3.4vh*var(--z)),38px)}
+  /* 타이머 모드는 '+1분' 같은 글자라 작게 */
+  .keys.tmode .key.op{font-weight:700;font-size:clamp(13px,calc(2.1vh*var(--z)),23px)}
   .key.op.armed{background:var(--amber);color:#16212B;border-color:var(--amber)}
   .key.eq{background:var(--mint);color:#12291F;border-color:var(--mint);font-weight:700;
           font-family:-apple-system,sans-serif;font-size:clamp(14px,calc(2.3vh*var(--z)),25px)}
   .key.eq.running{background:var(--amber);color:#2B1D06;border-color:var(--amber)}
   .key.mute{opacity:.28;pointer-events:none}
+
+  .credit{text-align:center;color:var(--dim);opacity:.55;
+          font:400 clamp(10px,calc(1.3vh*var(--z)),15px)/1 -apple-system,sans-serif;
+          letter-spacing:.04em}
 
   body.ring{animation:flash .5s steps(2,end) 6}
   @keyframes flash{0%,100%{background:var(--ink)}50%{background:#2C3A2F}}
@@ -146,9 +156,9 @@
   <button class="bridge" id="bridge">계산 결과를 타이머 시간으로 보내기</button>
 
   <div class="keys" id="keys">
-    <button class="key fn" data-k="clear">AC</button>
+    <button class="key fn ac" data-k="clear">AC</button>
     <button class="key fn" data-k="back">⌫</button>
-    <button class="key fn" data-k="pct">%</button>
+    <button class="key fn" data-k="dbl0">00</button>
     <button class="key op" data-k="div">÷</button>
 
     <button class="key" data-k="7">7</button>
@@ -166,11 +176,13 @@
     <button class="key" data-k="3">3</button>
     <button class="key op" data-k="add">+</button>
 
-    <button class="key fn" data-k="neg">±</button>
+    <button class="key fn" data-k="pct">%</button>
     <button class="key" data-k="0">0</button>
     <button class="key" data-k="dot">.</button>
     <button class="key eq" data-k="go">=</button>
   </div>
+
+  <div class="credit">만든이 강진희</div>
 
 </div>
 
@@ -255,13 +267,14 @@
 
   /* ── 모드 ── */
   var LABEL={
-    calc:{clear:'AC',back:'⌫',pct:'%',div:'÷',mul:'×',sub:'−',add:'+',neg:'±',dot:'.',go:'='},
-    timer:{clear:'AC',back:'⌫',pct:'',div:'+1분',mul:'+5분',sub:'−1분',add:'리셋',neg:'00',dot:'분↔초',go:'시작'}
+    calc:{clear:'AC',back:'⌫',dbl0:'00',div:'÷',mul:'×',sub:'−',add:'+',pct:'%',dot:'.',go:'='},
+    timer:{clear:'AC',back:'⌫',dbl0:'00',div:'+1분',mul:'+5분',sub:'−1분',add:'리셋',pct:'',dot:'분↔초',go:'시작'}
   };
   function setMode(m){
     mode=m;
     $('mCalc').classList.toggle('on',m==='calc');
     $('mTime').classList.toggle('on',m==='timer');
+    $('keys').classList.toggle('tmode', m==='timer');
     var keys=document.querySelectorAll('.key');
     for(var i=0;i<keys.length;i++){
       var k=keys[i].dataset.k, L=LABEL[m][k];
@@ -376,7 +389,11 @@
       var v=parseFloat(cur);
       cur=String(acc!==null&&(op==='add'||op==='sub') ? acc*v/100 : v/100); fresh=false;
     }
-    else if(k==='neg'){ if(cur!=='0'&&cur!=='오류') cur = cur.charAt(0)==='-'?cur.slice(1):'-'+cur; }
+    else if(k==='dbl0'){
+      if(cur==='오류') cur='0';
+      if(fresh){ cur='0'; fresh=false; }
+      else if(cur!=='0' && cur.length<13) cur+='00';
+    }
     draw();
   }
   function timerKey(k){
@@ -393,7 +410,7 @@
       else { var v=((tsec==='00'||tsec==='0'?'':tsec)+k).slice(-2);
              tsec = (+v>59) ? k : v; }
     }
-    else if(k==='neg'){
+    else if(k==='dbl0'){
       if(field==='min') tmin=((tmin==='0'?'':tmin)+'00').slice(-3);
       else tsec='00';
     }
