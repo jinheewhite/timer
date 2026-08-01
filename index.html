@@ -77,6 +77,7 @@
     height:clamp(70px,calc(16vh*var(--z)),184px);
     display:flex;align-items:center;justify-content:flex-end;
   }
+  .value #vin{white-space:nowrap;flex:0 0 auto}
   .value .off{color:var(--dim);opacity:.45}
   /* 타이머 작동 중 — 남은 시간을 크게 */
   body.running .value{font-size:clamp(66px,calc(15vh*var(--z)),176px);letter-spacing:-.04em}
@@ -176,7 +177,7 @@
       <span class="wl" id="wl"></span>
       <span id="trailText"></span>
     </div>
-    <div class="value" id="value" aria-live="polite">0</div>
+    <div class="value" id="value" aria-live="polite"><span id="vin">0</span></div>
     <div class="units hide" id="units"><span>분</span><span></span><span>초</span></div>
     <div class="bar hide" id="bar"><i id="fill"></i></div>
   </div>
@@ -223,7 +224,7 @@
 (function(){
   'use strict';
   var $=function(id){return document.getElementById(id)};
-  var $val=$('value'), $trail=$('trailText'), $wl=$('wl'), $units=$('units'),
+  var $val=$('value'), $vin=$('vin'), $trail=$('trailText'), $wl=$('wl'), $units=$('units'),
       $bar=$('bar'), $fill=$('fill'), $bridge=$('bridge');
   var mode='calc';
 
@@ -269,7 +270,7 @@
     var ops=document.querySelectorAll('.key.op'), i;
 
     if(mode==='calc'){
-      $val.textContent = cur==='오류' ? '오류' : fmt(parseFloat(cur))+(/\.$/.test(cur)?'.':'');
+      $vin.textContent = cur==='오류' ? '오류' : fmt(parseFloat(cur))+(/\.$/.test(cur)?'.':'');
       $trail.textContent = acc===null ? '' : fmt(acc)+' '+SYM[op];
       $bar.classList.add('hide');
       $units.classList.add('hide');
@@ -278,7 +279,7 @@
       $bridge.textContent='계산 결과를 타이머 시간으로 보내기';
     } else {
       if(editing()){
-        $val.innerHTML =
+        $vin.innerHTML =
           '<span class="fld'+(field==='min'?' on':' dim')+'" data-f="min">'+
             (tmin||'0').padStart(2,'0')+'</span>'+
           '<span>:</span>'+
@@ -287,7 +288,7 @@
         $trail.textContent='숫자를 눌러 직접 입력';
         $units.classList.remove('hide');
       } else {
-        $val.textContent = timeText(left);
+        $vin.textContent = timeText(left);
         $trail.textContent = running ? '진행 중' : (left<=0 ? '완료' : '일시정지');
         $units.classList.add('hide');
       }
@@ -304,16 +305,16 @@
   /* 숫자가 길면 잘리지 않도록 자동 축소 */
   var lastFit=null;
   function fitValue(force){
-    var key=mode+'|'+(document.body.classList.contains('running')?'r':'e')+'|'+$val.textContent;
+    var key=mode+'|'+(document.body.classList.contains('running')?'r':'e')+'|'+$vin.textContent;
     if(!force && key===lastFit) return;   // 같은 내용이면 다시 재지 않음 (깜빡임 방지)
     lastFit=key;
     $val.style.fontSize='';
     var avail=$val.clientWidth;
     if(!avail) return;
-    var need=$val.scrollWidth;
-    if(need>avail+1){
+    var need=$vin.offsetWidth;            // 글자 자체의 너비
+    if(need>avail){
       var base=parseFloat(getComputedStyle($val).fontSize);
-      $val.style.fontSize=Math.max(13,Math.floor(base*avail/need))+'px';
+      $val.style.fontSize=Math.max(12,Math.floor(base*avail/need)-1)+'px';
     }
   }
 
@@ -499,7 +500,13 @@
     } else {
       var ms=running?Math.max(0,endAt-Date.now()):left;
       cur=String(Math.round(ms/600)/100); fresh=true; acc=null; op=null;
-      window.addEventListener('resize',function(){ fitValue(true); });
+      /* 세로 고정 시도 (안드로이드 설치형에서 동작) */
+  try{
+    if(screen.orientation && screen.orientation.lock)
+      screen.orientation.lock('portrait').catch(function(){});
+  }catch(e){}
+
+  window.addEventListener('resize',function(){ fitValue(true); });
 
   setMode('calc');
       $trail.textContent='타이머에서 가져옴 (분)';
