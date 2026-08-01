@@ -16,6 +16,7 @@
     --ink:#16212B; --panel:#1E2B37; --raise:#263746;
     --line:rgba(140,168,190,.18); --chalk:#E8EDF1; --dim:#8FA5B6;
     --amber:#F0A93B; --mint:#6FD6B4;
+    --z:1;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
@@ -24,21 +25,31 @@
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",sans-serif;
     -webkit-user-select:none;user-select:none;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    display:flex;align-items:center;justify-content:center;
+    overflow-x:hidden;overflow-y:auto;
+    overscroll-behavior:none;-webkit-overflow-scrolling:touch;
+    touch-action:manipulation;
   }
   .app{
-    width:100%;max-width:480px;padding:20px;
-    display:flex;flex-direction:column;gap:14px;
-    min-height:100dvh;justify-content:center;
+    width:100%;margin:0 auto;
+    max-width:clamp(280px, calc(min(94vw, 55vh) * var(--z)), 640px);
+    padding:clamp(10px, 2vh, 24px);
+    display:flex;flex-direction:column;gap:clamp(8px, 1.5vh, 16px);
+    min-height:100svh;justify-content:center;
   }
 
   /* 모드 전환 */
-  .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;
+  .seg{display:grid;grid-template-columns:1fr 1fr 3.4em;gap:4px;
        background:rgba(0,0,0,.25);border-radius:999px;padding:4px}
+  .seg .szbtn{color:var(--dim);font-weight:700}
+  .seg .szbtn:active{background:var(--raise)}
+
+  /* 글자 크기 — 보통 / 크게 / 최대 */
+  body.s2{--z:1.16}
+  body.s3{--z:1.34}
   .seg button{
     appearance:none;border:0;background:transparent;color:var(--dim);
-    border-radius:999px;padding:11px 0;cursor:pointer;
-    font:600 15px/1 -apple-system,sans-serif;transition:background .18s ease,color .18s ease;
+    border-radius:999px;padding:clamp(8px,1.5vh,18px) 0;cursor:pointer;
+    font:600 clamp(12px,calc(1.9vh*var(--z)),20px)/1 -apple-system,sans-serif;transition:background .18s ease,color .18s ease;
   }
   .seg button.on{background:var(--raise);color:var(--chalk)}
   .seg button:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
@@ -46,10 +57,10 @@
   /* 디스플레이 */
   .readout{
     background:var(--panel);border:1px solid var(--line);border-radius:18px;
-    padding:18px 20px 16px;display:flex;flex-direction:column;gap:8px;
+    padding:clamp(12px,2.2vh,22px) clamp(14px,2.4vh,24px);display:flex;flex-direction:column;gap:8px;
   }
   .trail{
-    font:400 14px/1.2 ui-monospace,"SF Mono",Menlo,monospace;color:var(--dim);
+    font:400 clamp(11px,calc(1.6vh*var(--z)),19px)/1.2 ui-monospace,"SF Mono",Menlo,monospace;color:var(--dim);
     min-height:17px;white-space:nowrap;overflow:hidden;
     display:flex;align-items:center;justify-content:space-between;gap:10px;
   }
@@ -59,11 +70,19 @@
   .wl.on{opacity:1;color:var(--mint)}
   .wl.warn{opacity:1;color:var(--amber)}
   .value{
-    font:600 clamp(40px,11vw,56px)/1 ui-monospace,"SF Mono",Menlo,monospace;
+    font:600 clamp(28px,calc(6.4vh*var(--z)),76px)/1 ui-monospace,"SF Mono",Menlo,monospace;
     font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-align:right;
     white-space:nowrap;overflow:hidden;
   }
   .value .off{color:var(--dim);opacity:.45}
+  .fld{display:inline-block;padding:0 6px;cursor:pointer;
+       border-bottom:4px solid transparent;transition:border-color .18s ease,color .18s ease}
+  .fld.on{border-bottom-color:var(--amber)}
+  .fld.dim{color:var(--dim);opacity:.5}
+  .units{display:flex;justify-content:flex-end;gap:0;margin-top:-2px}
+  .units span{font:500 clamp(9px,calc(1.25vh*var(--z)),15px)/1 -apple-system,sans-serif;color:var(--dim);
+              width:2.2ch;text-align:center;padding:0 6px}
+  .units.hide{display:none}
   .bar{height:3px;background:rgba(140,168,190,.16);border-radius:2px;overflow:hidden;margin-top:4px}
   .bar i{display:block;height:100%;width:0;background:var(--amber);
          border-radius:2px;transition:width .25s linear}
@@ -73,18 +92,19 @@
   /* 값 전달 바 */
   .bridge{
     appearance:none;width:100%;border:1px dashed var(--line);background:transparent;
-    color:var(--dim);border-radius:12px;padding:11px;cursor:pointer;
-    font:500 13px/1 -apple-system,sans-serif;transition:color .15s ease,border-color .15s ease;
+    color:var(--dim);border-radius:12px;padding:clamp(8px,1.4vh,17px);cursor:pointer;
+    font:500 clamp(11px,calc(1.6vh*var(--z)),18px)/1 -apple-system,sans-serif;transition:color .15s ease,border-color .15s ease;
   }
   .bridge:active{color:var(--chalk);border-color:var(--chalk)}
   .bridge:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
 
   /* 키패드 */
-  .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,1.1vh,13px)}
   .key{
     appearance:none;border:1px solid var(--line);background:var(--raise);color:var(--chalk);
-    border-radius:14px;min-height:60px;cursor:pointer;
-    font:500 clamp(18px,4.6vw,23px)/1.1 ui-monospace,"SF Mono",Menlo,monospace;
+    border-radius:14px;cursor:pointer;
+    min-height:clamp(42px,calc(7.6vh*var(--z)),94px);
+    font:500 clamp(16px,calc(2.7vh*var(--z)),31px)/1.1 ui-monospace,"SF Mono",Menlo,monospace;
     font-variant-numeric:tabular-nums;
     transition:transform .06s ease,background .12s ease,color .18s ease;
   }
@@ -92,10 +112,10 @@
   .key:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
   .key.fn{background:transparent;color:var(--dim)}
   .key.op{background:transparent;color:var(--amber);border-color:rgba(240,169,59,.35);
-          font-size:clamp(15px,3.6vw,18px);font-family:-apple-system,sans-serif}
+          font-size:clamp(13px,calc(2.1vh*var(--z)),23px);font-family:-apple-system,sans-serif}
   .key.op.armed{background:var(--amber);color:#16212B;border-color:var(--amber)}
   .key.eq{background:var(--mint);color:#12291F;border-color:var(--mint);font-weight:700;
-          font-family:-apple-system,sans-serif;font-size:clamp(16px,4vw,19px)}
+          font-family:-apple-system,sans-serif;font-size:clamp(14px,calc(2.3vh*var(--z)),25px)}
   .key.eq.running{background:var(--amber);color:#2B1D06;border-color:var(--amber)}
   .key.mute{opacity:.28;pointer-events:none}
 
@@ -110,6 +130,7 @@
   <div class="seg" role="tablist">
     <button id="mCalc" class="on" role="tab">계산</button>
     <button id="mTime" role="tab">타이머</button>
+    <button id="mSize" class="szbtn" aria-label="글자 크기">가</button>
   </div>
 
   <div class="readout">
@@ -118,6 +139,7 @@
       <span id="trailText"></span>
     </div>
     <div class="value" id="value" aria-live="polite">0</div>
+    <div class="units hide" id="units"><span>분</span><span></span><span>초</span></div>
     <div class="bar hide" id="bar"><i id="fill"></i></div>
   </div>
 
@@ -156,7 +178,7 @@
 (function(){
   'use strict';
   var $=function(id){return document.getElementById(id)};
-  var $val=$('value'), $trail=$('trailText'), $wl=$('wl'),
+  var $val=$('value'), $trail=$('trailText'), $wl=$('wl'), $units=$('units'),
       $bar=$('bar'), $fill=$('fill'), $bridge=$('bridge');
   var mode='calc';
 
@@ -177,18 +199,18 @@
   }
 
   /* ── 타이머 상태 ── */
-  var MIN=60000, entry='', total=0, left=0, running=false, endAt=0, tick=null, lock=null;
+  var MIN=60000, tmin='', tsec='', field='min',
+      total=0, left=0, running=false, endAt=0, tick=null, lock=null;
 
   function entryMs(){
-    var d=('000000'+entry).slice(-6);
-    return (+d.slice(0,2))*3600000 + (+d.slice(2,4))*MIN + (+d.slice(4,6))*1000;
+    return ((parseInt(tmin||'0',10))*60 + (parseInt(tsec||'0',10)))*1000;
   }
-  function msToEntry(ms){
+  function msToFields(ms){
     var s=Math.max(0,Math.round(ms/1000));
-    var h=Math.min(99,Math.floor(s/3600)), m=Math.floor(s%3600/60), q=s%60;
-    entry=String(h).padStart(2,'0')+String(m).padStart(2,'0')+String(q).padStart(2,'0');
-    entry=entry.replace(/^0+/,'');
+    tmin=String(Math.floor(s/60));
+    tsec=String(s%60).padStart(2,'0');
   }
+  function editing(){ return !running && !endAt; }
   function timeText(ms){
     var s=Math.max(0,Math.ceil(ms/1000));
     var h=Math.floor(s/3600), m=Math.floor(s%3600/60), q=s%60;
@@ -204,17 +226,25 @@
       $val.textContent = cur==='오류' ? '오류' : fmt(parseFloat(cur))+(/\.$/.test(cur)?'.':'');
       $trail.textContent = acc===null ? '' : fmt(acc)+' '+SYM[op];
       $bar.classList.add('hide');
+      $units.classList.add('hide');
       for(i=0;i<ops.length;i++)
         ops[i].classList.toggle('armed', op!==null && fresh && ops[i].dataset.k===op);
       $bridge.textContent='계산 결과를 타이머 시간으로 보내기';
     } else {
-      var ms = (running||left>0||endAt) ? left : entryMs();
-      if(!running && !endAt) ms = entryMs();
-      $val.innerHTML = ms===0 && !running
-        ? '<span class="off">00:00</span>'
-        : timeText(ms);
-      $trail.textContent = running ? '진행 중'
-        : (endAt && left<=0 ? '완료' : (endAt ? '일시정지' : '시:분:초 입력'));
+      if(editing()){
+        $val.innerHTML =
+          '<span class="fld'+(field==='min'?' on':' dim')+'" data-f="min">'+
+            (tmin||'0').padStart(2,'0')+'</span>'+
+          '<span>:</span>'+
+          '<span class="fld'+(field==='sec'?' on':' dim')+'" data-f="sec">'+
+            (tsec||'0').padStart(2,'0')+'</span>';
+        $trail.textContent='숫자를 눌러 직접 입력';
+        $units.classList.remove('hide');
+      } else {
+        $val.textContent = timeText(left);
+        $trail.textContent = running ? '진행 중' : (left<=0 ? '완료' : '일시정지');
+        $units.classList.add('hide');
+      }
       $bar.classList.remove('hide');
       $bar.classList.toggle('done', endAt>0 && left<=0);
       $fill.style.width = (total>0 ? Math.max(0,left/total)*100 : 0)+'%';
@@ -226,7 +256,7 @@
   /* ── 모드 ── */
   var LABEL={
     calc:{clear:'AC',back:'⌫',pct:'%',div:'÷',mul:'×',sub:'−',add:'+',neg:'±',dot:'.',go:'='},
-    timer:{clear:'AC',back:'⌫',pct:'',div:'+1분',mul:'+5분',sub:'−1분',add:'리셋',neg:'00',dot:'',go:'시작'}
+    timer:{clear:'AC',back:'⌫',pct:'',div:'+1분',mul:'+5분',sub:'−1분',add:'리셋',neg:'00',dot:'분↔초',go:'시작'}
   };
   function setMode(m){
     mode=m;
@@ -267,12 +297,12 @@
   }
   function resetTimer(){
     running=false; clearInterval(tick); tick=null; wake(false);
-    left=total; if(total===0){ endAt=0; } syncGo(); draw();
+    left=total; endAt=0; msToFields(total); syncGo(); draw();
   }
   function bump(ms){
     if(left+ms<0) return;
     total=Math.max(0,total+ms); left=Math.max(0,left+ms);
-    if(running) endAt+=ms; else msToEntry(left);
+    if(running) endAt+=ms; else msToFields(left);
     syncGo(); draw();
   }
   function badge(state){
@@ -356,10 +386,21 @@
     if(k==='sub') return bump(-MIN);
     if(k==='add') return resetTimer();
     if(running) return;
-    if(/^\d$/.test(k)) entry=(entry+k).replace(/^0+/,'').slice(-6);
-    else if(k==='neg') entry=(entry+'00').replace(/^0+/,'').slice(-6);
-    else if(k==='back') entry=entry.slice(0,-1);
-    else if(k==='clear'){ entry=''; total=0; left=0; endAt=0; }
+    if(k==='dot'){ field = field==='min'?'sec':'min'; return draw(); }
+    if(/^\d$/.test(k)){
+      if(!editing()){ endAt=0; }
+      if(field==='min'){ tmin=((tmin==='0'?'':tmin)+k).slice(-3); }
+      else { var v=((tsec==='00'||tsec==='0'?'':tsec)+k).slice(-2);
+             tsec = (+v>59) ? k : v; }
+    }
+    else if(k==='neg'){
+      if(field==='min') tmin=((tmin==='0'?'':tmin)+'00').slice(-3);
+      else tsec='00';
+    }
+    else if(k==='back'){
+      if(field==='min') tmin=tmin.slice(0,-1); else tsec=tsec.slice(0,-1);
+    }
+    else if(k==='clear'){ tmin=''; tsec=''; field='min'; }
     else return;
     total=entryMs(); left=total; endAt=0; syncGo(); draw();
   }
@@ -369,7 +410,7 @@
     if(mode==='calc'){
       var n=parseFloat(cur);
       if(!isFinite(n)||n<=0) return;
-      msToEntry(Math.round(n*MIN));
+      msToFields(Math.round(n*MIN));
       total=entryMs(); left=total; endAt=0; running=false;
       clearInterval(tick); tick=null;
       setMode('timer');
@@ -381,9 +422,21 @@
     }
   });
 
+  $val.addEventListener('click',function(e){
+    var f=e.target.closest('.fld');
+    if(f && mode==='timer'){ field=f.dataset.f; draw(); }
+  });
+
   $('keys').addEventListener('click',function(e){
     var b=e.target.closest('button'); if(b) press(b.dataset.k);
   });
+  var size=1;
+  $('mSize').addEventListener('click',function(){
+    size = size===3 ? 1 : size+1;
+    document.body.className = size===1 ? '' : 's'+size;
+    this.textContent = ['가','가+','가++'][size-1];
+  });
+
   $('mCalc').addEventListener('click',function(){setMode('calc')});
   $('mTime').addEventListener('click',function(){setMode('timer')});
 
