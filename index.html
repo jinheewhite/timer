@@ -122,7 +122,7 @@
   .rtick.maj{stroke:var(--chalk);stroke-width:3}
   .rtick.north{stroke:var(--red);stroke-width:4}
   .rnum{fill:var(--chalk);font:500 13px -apple-system,sans-serif;text-anchor:middle;opacity:.85}
-  .rcard{fill:var(--chalk);font:700 26px -apple-system,sans-serif;text-anchor:middle}
+  .rcard{fill:var(--chalk);font:600 17px -apple-system,sans-serif;text-anchor:middle}
   .rcard.n{fill:var(--red)}
   .rcard.s{fill:var(--blue)}
   .cross{stroke:rgba(232,237,241,.75);stroke-width:1.5}
@@ -423,7 +423,7 @@
     var h = heading==null ? 0 : heading;
     $('roseG').setAttribute('transform','rotate('+(-h)+' 120 120)');
     NUMS.forEach(function(n){ place(n,104,5,h); });
-    CARDS.forEach(function(c){ place(c,62,9,h); });
+    CARDS.forEach(function(c){ place(c,66,6,h); });
     if(heading==null){ $('cHead').innerHTML='--&deg;'; return; }
     $('cHead').textContent=Math.round(heading)+'° '+dirName(heading);
   }
@@ -555,6 +555,7 @@
       $readout.style.display='none'; $dial.classList.remove('on');
       $('keys').classList.add('hide'); $('run').classList.remove('on');
       $bridge.style.display='none'; $('comp').classList.add('on');
+      renderCompass();
       return;
     }
     $('comp').classList.remove('on');
@@ -967,6 +968,7 @@
       screen.orientation.lock('portrait').catch(function(){});
   }catch(e){}
 
+  renderCompass();
   document.body.classList.add('s2');
   $('mSize').textContent='가+';
   setMode('calc');
