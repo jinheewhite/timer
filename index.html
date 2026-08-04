@@ -111,16 +111,21 @@
   .comp{display:none;flex-direction:column;align-items:center;
         padding:clamp(8px,1.6vh,20px) 0 clamp(4px,1vh,12px);
         width:100vw;margin-left:calc(50% - 50vw)}
-  .comp .dwrap{width:min(96vw, clamp(300px, calc(66vh*var(--z)), 720px))}
-  .cdir{font:600 clamp(20px,calc(3.2vh*var(--z)),38px)/1 -apple-system,sans-serif;
-        color:var(--chalk);margin-top:clamp(10px,2vh,22px)}
   .comp.on{display:flex}
+  .comp .dwrap{width:min(96vw, clamp(300px, calc(64vh*var(--z)), 700px))}
   .comp .dwrap svg{transform:none}
-  .rtick{stroke:rgba(140,168,190,.32);stroke-width:2.4;stroke-linecap:round}
-  .rtick.card{stroke:var(--chalk);stroke-width:4}
-  .rlab{fill:var(--dim);font:700 20px -apple-system,sans-serif;text-anchor:middle}
-  .rlab.n{fill:var(--red);font-size:25px}
-  .rlab.s{fill:var(--blue);font-size:25px}
+  .chead{font:600 clamp(28px,calc(5vh*var(--z)),64px)/1 -apple-system,sans-serif;
+         color:var(--chalk);margin-bottom:clamp(6px,1.4vh,18px);letter-spacing:-.01em}
+  .cdir{font:500 clamp(12px,calc(1.8vh*var(--z)),20px)/1 -apple-system,sans-serif;
+        color:var(--dim);margin-top:clamp(6px,1.4vh,16px)}
+  .rtick{stroke:rgba(200,214,226,.45);stroke-width:2}
+  .rtick.maj{stroke:var(--chalk);stroke-width:3}
+  .rtick.north{stroke:var(--red);stroke-width:4}
+  .rnum{fill:var(--chalk);font:500 13px -apple-system,sans-serif;text-anchor:middle;opacity:.85}
+  .rcard{fill:var(--chalk);font:700 26px -apple-system,sans-serif;text-anchor:middle}
+  .rcard.n{fill:var(--red)}
+  .rcard.s{fill:var(--blue)}
+  .cross{stroke:rgba(232,237,241,.75);stroke-width:1.5}
 
   /* 값 전달 바 */
   .bridge{
@@ -226,19 +231,21 @@
   </div>
 
   <div class="comp" id="comp">
+    <div class="chead" id="cHead">--&deg;</div>
     <div class="dwrap">
       <svg viewBox="0 0 240 240" aria-hidden="true">
         <g id="roseG"></g>
+        <g id="labG"></g>
+        <g>
+          <line class="cross" x1="120" y1="103" x2="120" y2="137"/>
+          <line class="cross" x1="103" y1="120" x2="137" y2="120"/>
+          <circle cx="120" cy="120" r="4.5" fill="#8FA5B6"/>
+          <polygon points="120,25 112,9 128,9" fill="#E8EDF1"/>
+        </g>
       </svg>
-      <svg viewBox="0 0 240 240" class="needle" aria-hidden="true">
-        <polygon points="120,8 112,28 128,28" fill="#E86A5A"/>
-      </svg>
-      <div class="dtext">
-        <div class="dleft" id="cDeg" style="font-size:clamp(54px,calc(11vh*var(--z)),132px)">--°</div>
-      </div>
     </div>
     <div class="cdir" id="cDir">센서 준비 중</div>
-    <button class="bridge" id="cStart" style="margin-top:14px">나침반 켜기</button>
+    <button class="bridge" id="cStart" style="margin-top:14px;max-width:280px">나침반 켜기</button>
   </div>
 
   <button class="bridge" id="bridge">계산 결과를 타이머 시간으로 보내기</button>
@@ -375,38 +382,52 @@
   }
 
   /* ── 나침반 ───────────────────────── */
+  var NUMS=[], CARDS=[];
   (function(){
-    var g=$('roseG'), ns='http://www.w3.org/2000/svg', i, el;
+    var g=$('roseG'), lg=$('labG'), ns='http://www.w3.org/2000/svg', i, el;
+    /* 눈금 — 5도마다, 30도마다 길게, 정북은 빨강 */
     for(i=0;i<72;i++){
-      var card=(i%18===0);
+      var deg=i*5, maj=(deg%30===0), north=(deg===0);
       el=document.createElementNS(ns,'line');
-      el.setAttribute('x1',120); el.setAttribute('y1',card?18:22);
-      el.setAttribute('x2',120); el.setAttribute('y2',card?34:30);
-      el.setAttribute('class','rtick'+(card?' card':''));
-      el.setAttribute('transform','rotate('+(i*5)+' 120 120)');
+      el.setAttribute('x1',120); el.setAttribute('y1',north?26:(maj?28:32));
+      el.setAttribute('x2',120); el.setAttribute('y2',44);
+      el.setAttribute('class','rtick'+(north?' north':(maj?' maj':'')));
+      el.setAttribute('transform','rotate('+deg+' 120 120)');
       g.appendChild(el);
     }
-    var L=[['N',0,'n'],['E',90,''],['S',180,'s'],['W',270,'']];
-    L.forEach(function(p){
+    /* 바깥 각도 숫자 — 30도마다, 항상 똑바로 */
+    for(i=1;i<12;i++){
+      el=document.createElementNS(ns,'text');
+      el.setAttribute('class','rnum'); el.textContent=String(i*30);
+      lg.appendChild(el); NUMS.push({el:el,deg:i*30});
+    }
+    /* 안쪽 한글 방위 */
+    [['북',0,'n'],['동',90,''],['남',180,'s'],['서',270,'']].forEach(function(p){
       var t=document.createElementNS(ns,'text');
-      var rad=(p[1]-90)*Math.PI/180, r=76;
-      t.setAttribute('x',120+r*Math.cos(rad));
-      t.setAttribute('y',120+r*Math.sin(rad)+5);
-      t.setAttribute('class','rlab'+(p[2]?' '+p[2]:''));
+      t.setAttribute('class','rcard'+(p[2]?' '+p[2]:''));
       t.textContent=p[0];
-      g.appendChild(t);
+      lg.appendChild(t); CARDS.push({el:t,deg:p[1]});
     });
   })();
+
+  function place(item,r,dy,h){
+    var rad=(item.deg-h-90)*Math.PI/180;
+    item.el.setAttribute('x',120+r*Math.cos(rad));
+    item.el.setAttribute('y',120+r*Math.sin(rad)+dy);
+  }
 
   var heading=null, compOn=false;
   var DIRS=['북','북동','동','남동','남','남서','서','북서'];
   function dirName(d){ return DIRS[Math.round(d/45)%8]; }
   function renderCompass(){
-    if(heading==null) return;
-    $('roseG').setAttribute('transform','rotate('+(-heading)+' 120 120)');
-    $('cDeg').textContent=Math.round(heading)+'°';
-    $('cDir').textContent=dirName(heading)+'쪽';
+    var h = heading==null ? 0 : heading;
+    $('roseG').setAttribute('transform','rotate('+(-h)+' 120 120)');
+    NUMS.forEach(function(n){ place(n,104,5,h); });
+    CARDS.forEach(function(c){ place(c,62,9,h); });
+    if(heading==null){ $('cHead').innerHTML='--&deg;'; return; }
+    $('cHead').textContent=Math.round(heading)+'° '+dirName(heading);
   }
+
   var gotAbs=false;
   function apply(h){
     if(h==null || isNaN(h)) return;
@@ -442,7 +463,6 @@
     window.removeEventListener('deviceorientation',onOri,true);
     compOn=false; gotAbs=false; heading=null;
     $('roseG').setAttribute('transform','rotate(0 120 120)');
-    $('cDeg').textContent='--°';
     $('cDir').textContent='꺼짐';
     $('cStart').textContent='나침반 켜기';
   }
