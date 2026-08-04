@@ -15,7 +15,7 @@
   :root{
     --ink:#16212B; --panel:#1E2B37; --raise:#263746;
     --line:rgba(140,168,190,.18); --chalk:#E8EDF1; --dim:#8FA5B6;
-    --amber:#F0A93B; --mint:#6FD6B4; --red:#E86A5A;
+    --amber:#F0A93B; --mint:#6FD6B4; --red:#E86A5A; --blue:#5AA9E8;
     --z:1;
   }
   /* 글자 크기 — 보통 / 크게 / 최대 */
@@ -109,14 +109,18 @@
         color:var(--dim);margin-top:clamp(8px,1.6vh,16px)}
   .dend.off{visibility:hidden}
   .comp{display:none;flex-direction:column;align-items:center;
-        padding:clamp(8px,1.6vh,20px) 0 clamp(4px,1vh,12px)}
-  .comp .dwrap{width:min(100%, clamp(300px, calc(58vh*var(--z)), 640px))}
+        padding:clamp(8px,1.6vh,20px) 0 clamp(4px,1vh,12px);
+        width:100vw;margin-left:calc(50% - 50vw)}
+  .comp .dwrap{width:min(96vw, clamp(300px, calc(66vh*var(--z)), 720px))}
+  .cdir{font:600 clamp(20px,calc(3.2vh*var(--z)),38px)/1 -apple-system,sans-serif;
+        color:var(--chalk);margin-top:clamp(10px,2vh,22px)}
   .comp.on{display:flex}
   .comp .dwrap svg{transform:none}
   .rtick{stroke:rgba(140,168,190,.32);stroke-width:2.4;stroke-linecap:round}
   .rtick.card{stroke:var(--chalk);stroke-width:4}
-  .rlab{fill:var(--dim);font:700 22px -apple-system,sans-serif;text-anchor:middle}
-  .rlab.n{fill:var(--red)}
+  .rlab{fill:var(--dim);font:700 20px -apple-system,sans-serif;text-anchor:middle}
+  .rlab.n{fill:var(--red);font-size:25px}
+  .rlab.s{fill:var(--blue);font-size:25px}
 
   /* 값 전달 바 */
   .bridge{
@@ -231,9 +235,9 @@
       </svg>
       <div class="dtext">
         <div class="dleft" id="cDeg" style="font-size:clamp(54px,calc(11vh*var(--z)),132px)">--°</div>
-        <div class="dset" id="cDir" style="margin:10px 0 0">센서 준비 중</div>
       </div>
     </div>
+    <div class="cdir" id="cDir">센서 준비 중</div>
     <button class="bridge" id="cStart" style="margin-top:14px">나침반 켜기</button>
   </div>
 
@@ -382,13 +386,13 @@
       el.setAttribute('transform','rotate('+(i*5)+' 120 120)');
       g.appendChild(el);
     }
-    var L=[['북',0],['동',90],['남',180],['서',270]];
+    var L=[['N',0,'n'],['E',90,''],['S',180,'s'],['W',270,'']];
     L.forEach(function(p){
       var t=document.createElementNS(ns,'text');
       var rad=(p[1]-90)*Math.PI/180, r=76;
       t.setAttribute('x',120+r*Math.cos(rad));
       t.setAttribute('y',120+r*Math.sin(rad)+5);
-      t.setAttribute('class','rlab'+(p[1]===0?' n':''));
+      t.setAttribute('class','rlab'+(p[2]?' '+p[2]:''));
       t.textContent=p[0];
       g.appendChild(t);
     });
@@ -426,14 +430,24 @@
     compOn=true;
     window.addEventListener('deviceorientationabsolute',onAbs,true);
     window.addEventListener('deviceorientation',onOri,true);
-    $('cStart').style.display='none';
+    $('cStart').textContent='나침반 끄기';
     $('cDir').textContent='폰을 수평으로 들어주세요';
     setTimeout(function(){
       if(heading==null) $('cDir').textContent='이 기기에는 방위 센서가 없습니다';
       else if(!gotAbs) $('cDir').textContent='방위 기준이 불안정합니다 — 8자로 돌려주세요';
     },2500);
   }
+  function stopCompass(){
+    window.removeEventListener('deviceorientationabsolute',onAbs,true);
+    window.removeEventListener('deviceorientation',onOri,true);
+    compOn=false; gotAbs=false; heading=null;
+    $('roseG').setAttribute('transform','rotate(0 120 120)');
+    $('cDeg').textContent='--°';
+    $('cDir').textContent='꺼짐';
+    $('cStart').textContent='나침반 켜기';
+  }
   $('cStart').addEventListener('click',function(){
+    if(compOn) return stopCompass();
     if(typeof DeviceOrientationEvent==='undefined'){
       $('cDir').textContent='이 브라우저는 지원하지 않습니다'; return;
     }
@@ -605,6 +619,7 @@
     alarm:{clear:'AC',back:'⌫',dbl0:'00',div:'+1시간',mul:'+10분',sub:'−10분',add:'초기화',pct:'',dot:'칸이동',go:'설정'}
   };
   function setMode(m){
+    if(m!=='comp' && compOn) stopCompass();
     mode=m; lastFit=null;
     $('mCalc').classList.toggle('on',m==='calc');
     $('mTime').classList.toggle('on',m==='timer');
