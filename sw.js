@@ -1,7 +1,7 @@
 /* 계산·타이머 — 오프라인 캐시
    내용을 수정한 뒤에는 아래 CACHE 이름의 숫자를 반드시 올리세요.
    그래야 아이폰이 새 버전을 내려받습니다. */
-var CACHE = 'calctimer-v34';
+var CACHE = 'calctimer-v35';
 var FILES = [
   './',
   './index.html',

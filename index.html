@@ -403,21 +403,34 @@
     $('cDeg').textContent=Math.round(heading)+'°';
     $('cDir').textContent=dirName(heading)+'쪽';
   }
+  var gotAbs=false;
+  function apply(h){
+    if(h==null || isNaN(h)) return;
+    heading=(h%360+360)%360; renderCompass();
+  }
+  /* 진북 기준 신호 (안드로이드) */
+  function onAbs(e){
+    if(e.alpha==null) return;
+    gotAbs=true; apply(360-e.alpha);
+  }
+  /* 아이폰은 여기서 진북 값을 줌. 그 외 상대 신호는 버림 */
   function onOri(e){
-    var h=null;
-    if(e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)) h=e.webkitCompassHeading;
-    else if(e.alpha!=null) h=360-e.alpha;
-    if(h==null) return;
-    heading=(h+360)%360; renderCompass();
+    if(e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)){
+      gotAbs=true; return apply(e.webkitCompassHeading);
+    }
+    if(gotAbs) return;
+    if(e.absolute===true && e.alpha!=null) return apply(360-e.alpha);
+    $('cDir').textContent='이 기기는 방위 기준을 못 잡습니다';
   }
   function bindOri(){
     compOn=true;
-    window.addEventListener('deviceorientationabsolute',onOri,true);
+    window.addEventListener('deviceorientationabsolute',onAbs,true);
     window.addEventListener('deviceorientation',onOri,true);
     $('cStart').style.display='none';
     $('cDir').textContent='폰을 수평으로 들어주세요';
     setTimeout(function(){
       if(heading==null) $('cDir').textContent='이 기기에는 방위 센서가 없습니다';
+      else if(!gotAbs) $('cDir').textContent='방위 기준이 불안정합니다 — 8자로 돌려주세요';
     },2500);
   }
   $('cStart').addEventListener('click',function(){
