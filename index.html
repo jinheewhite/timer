@@ -41,13 +41,14 @@
   }
 
   /* 모드 전환 */
-  .seg{display:grid;grid-template-columns:1fr 1fr 3.4em;gap:4px;
+  .seg{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 2.6em;gap:4px;
        background:rgba(0,0,0,.25);border-radius:999px;padding:4px}
   .seg button{
     appearance:none;border:0;background:transparent;color:var(--dim);
     border-radius:999px;padding:clamp(8px,1.5vh,18px) 0;cursor:pointer;
     font:600 clamp(12px,calc(1.9vh*var(--z)),20px)/1 -apple-system,sans-serif;
     transition:background .18s ease,color .18s ease;
+    white-space:nowrap;min-width:0;overflow:hidden;
   }
   .seg button.on{background:var(--raise);color:var(--chalk)}
   .seg button:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
@@ -107,6 +108,15 @@
   .dend{font:500 clamp(11px,calc(1.7vh*var(--z)),18px)/1 -apple-system,sans-serif;
         color:var(--dim);margin-top:clamp(8px,1.6vh,16px)}
   .dend.off{visibility:hidden}
+  .comp{display:none;flex-direction:column;align-items:center;
+        padding:clamp(8px,1.6vh,20px) 0 clamp(4px,1vh,12px)}
+  .comp .dwrap{width:min(100%, clamp(300px, calc(58vh*var(--z)), 640px))}
+  .comp.on{display:flex}
+  .comp .dwrap svg{transform:none}
+  .rtick{stroke:rgba(140,168,190,.32);stroke-width:2.4;stroke-linecap:round}
+  .rtick.card{stroke:var(--chalk);stroke-width:4}
+  .rlab{fill:var(--dim);font:700 22px -apple-system,sans-serif;text-anchor:middle}
+  .rlab.n{fill:var(--red)}
 
   /* 값 전달 바 */
   .bridge{
@@ -164,9 +174,17 @@
   .rbtn.act{background:rgba(240,169,59,.14);color:var(--amber);border:1px solid rgba(240,169,59,.55)}
   .rbtn.act.resume{background:rgba(111,214,180,.14);color:var(--mint);border-color:rgba(111,214,180,.55)}
 
-  .credit{margin-top:auto;padding-top:clamp(6px,1.2vh,14px);
-          text-align:center;color:var(--dim);opacity:.55;letter-spacing:.04em;
+  .foot{margin-top:auto;padding-top:clamp(6px,1.2vh,14px);
+        display:grid;grid-template-columns:2.6em 1fr 2.6em;align-items:center}
+  .credit{text-align:center;color:var(--dim);opacity:.55;letter-spacing:.04em;
           font:400 clamp(10px,calc(1.3vh*var(--z)),15px)/1 -apple-system,sans-serif}
+  .mic{appearance:none;border:1px solid var(--line);background:transparent;
+       color:var(--dim);border-radius:50%;width:2.4em;height:2.4em;
+       font-size:clamp(13px,calc(1.8vh*var(--z)),19px);line-height:1;cursor:pointer;
+       justify-self:end}
+  .mic.rec{color:var(--red);border-color:rgba(232,106,90,.6);
+           animation:pulse .9s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
   body.ring{animation:flash .7s steps(2,end) infinite}
   @keyframes flash{0%,100%{background:var(--ink)}50%{background:#2C3A2F}}
@@ -179,6 +197,8 @@
   <div class="seg" role="tablist">
     <button id="mCalc" class="on" role="tab">계산</button>
     <button id="mTime" role="tab">타이머</button>
+    <button id="mAlarm" role="tab">알람</button>
+    <button id="mComp" role="tab">나침반</button>
     <button id="mSize" class="szbtn" aria-label="글자 크기">가</button>
   </div>
 
@@ -199,6 +219,22 @@
         <div class="dend" id="dEnd"></div>
       </div>
     </div>
+  </div>
+
+  <div class="comp" id="comp">
+    <div class="dwrap">
+      <svg viewBox="0 0 240 240" aria-hidden="true">
+        <g id="roseG"></g>
+      </svg>
+      <svg viewBox="0 0 240 240" class="needle" aria-hidden="true">
+        <polygon points="120,8 112,28 128,28" fill="#E86A5A"/>
+      </svg>
+      <div class="dtext">
+        <div class="dleft" id="cDeg" style="font-size:clamp(54px,calc(11vh*var(--z)),132px)">--°</div>
+        <div class="dset" id="cDir" style="margin:10px 0 0">센서 준비 중</div>
+      </div>
+    </div>
+    <button class="bridge" id="cStart" style="margin-top:14px">나침반 켜기</button>
   </div>
 
   <button class="bridge" id="bridge">계산 결과를 타이머 시간으로 보내기</button>
@@ -235,7 +271,11 @@
     <button class="rbtn act" id="rGo">일시정지</button>
   </div>
 
-  <div class="credit">만든이 강진희</div>
+  <div class="foot">
+    <span></span>
+    <span class="credit">만든이 진희짱</span>
+    <button id="mMic" class="mic" aria-label="음성으로 말하기">🎤</button>
+  </div>
 
 </div>
 
@@ -330,10 +370,158 @@
     else { e.classList.remove('off'); e.textContent='일시정지'; }
   }
 
+  /* ── 나침반 ───────────────────────── */
+  (function(){
+    var g=$('roseG'), ns='http://www.w3.org/2000/svg', i, el;
+    for(i=0;i<72;i++){
+      var card=(i%18===0);
+      el=document.createElementNS(ns,'line');
+      el.setAttribute('x1',120); el.setAttribute('y1',card?18:22);
+      el.setAttribute('x2',120); el.setAttribute('y2',card?34:30);
+      el.setAttribute('class','rtick'+(card?' card':''));
+      el.setAttribute('transform','rotate('+(i*5)+' 120 120)');
+      g.appendChild(el);
+    }
+    var L=[['북',0],['동',90],['남',180],['서',270]];
+    L.forEach(function(p){
+      var t=document.createElementNS(ns,'text');
+      var rad=(p[1]-90)*Math.PI/180, r=76;
+      t.setAttribute('x',120+r*Math.cos(rad));
+      t.setAttribute('y',120+r*Math.sin(rad)+5);
+      t.setAttribute('class','rlab'+(p[1]===0?' n':''));
+      t.textContent=p[0];
+      g.appendChild(t);
+    });
+  })();
+
+  var heading=null, compOn=false;
+  var DIRS=['북','북동','동','남동','남','남서','서','북서'];
+  function dirName(d){ return DIRS[Math.round(d/45)%8]; }
+  function renderCompass(){
+    if(heading==null) return;
+    $('roseG').setAttribute('transform','rotate('+(-heading)+' 120 120)');
+    $('cDeg').textContent=Math.round(heading)+'°';
+    $('cDir').textContent=dirName(heading)+'쪽';
+  }
+  function onOri(e){
+    var h=null;
+    if(e.webkitCompassHeading!=null && !isNaN(e.webkitCompassHeading)) h=e.webkitCompassHeading;
+    else if(e.alpha!=null) h=360-e.alpha;
+    if(h==null) return;
+    heading=(h+360)%360; renderCompass();
+  }
+  function bindOri(){
+    compOn=true;
+    window.addEventListener('deviceorientationabsolute',onOri,true);
+    window.addEventListener('deviceorientation',onOri,true);
+    $('cStart').style.display='none';
+    $('cDir').textContent='폰을 수평으로 들어주세요';
+    setTimeout(function(){
+      if(heading==null) $('cDir').textContent='이 기기에는 방위 센서가 없습니다';
+    },2500);
+  }
+  $('cStart').addEventListener('click',function(){
+    if(typeof DeviceOrientationEvent==='undefined'){
+      $('cDir').textContent='이 브라우저는 지원하지 않습니다'; return;
+    }
+    if(DeviceOrientationEvent.requestPermission){
+      DeviceOrientationEvent.requestPermission().then(function(r){
+        if(r==='granted') bindOri(); else $('cDir').textContent='센서 권한이 필요합니다';
+      }).catch(function(){ $('cDir').textContent='센서를 켤 수 없습니다'; });
+    } else bindOri();
+  });
+
+  /* ── 시각 알람 ─────────────────────── */
+  var A={hr:'',min:''}, afield='hr', alarmAt=0, aFrom=0, aTick=null, ringing=false;
+
+  function alarmMs(){
+    var d=new Date();
+    d.setHours(+(A.hr||0), +(A.min||0), 0, 0);
+    if(d.getTime()<=Date.now()) d.setDate(d.getDate()+1);
+    return d.getTime();
+  }
+  function ampm(ts){ return new Date(ts).getHours()<12 ? '오전' : '오후'; }
+  function hhmm(ts){
+    var d=new Date(ts), h=d.getHours()%12||12;
+    return h+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  function untilText(ts){
+    var q=Math.max(0,Math.round((ts-Date.now())/1000));
+    var h=Math.floor(q/3600), m=Math.floor(q%3600/60);
+    return h>0 ? ('앞으로 '+h+'시간 '+m+'분') : ('앞으로 '+(m||1)+'분');
+  }
+  function armAlarm(){
+    if(A.hr==='' && A.min==='') return;
+    alarmAt=alarmMs(); aFrom=Date.now(); ringing=false;
+    clearInterval(aTick);
+    aTick=setInterval(function(){
+      if(!ringing && alarmAt && Date.now()>=alarmAt){ ringing=true; alarm(); }
+      if(mode==='alarm') draw();
+    },1000);
+    wake(true); syncGo(); draw();
+  }
+  function disarmAlarm(){
+    alarmAt=0; aFrom=0; ringing=false;
+    clearInterval(aTick); aTick=null;
+    stopAlarm(); wake(false); syncGo(); draw();
+  }
+  function drawAlarmDial(){
+    var span=alarmAt-aFrom, leftMs=Math.max(0,alarmAt-Date.now());
+    var f = span>0 ? leftMs/span : 0, n=Math.ceil(f*TICKS);
+    for(var i=0;i<TICKS;i++)
+      tickEls[i].setAttribute('class','tick'+(ringing?' done':(i<n?' act':'')));
+    $('dSet').textContent = ampm(alarmAt)+' 알람';
+    $('dLeft').textContent = hhmm(alarmAt);
+    $('dEnd').textContent = ringing ? '⏰ 울리는 중' : untilText(alarmAt);
+  }
+  function acol(label,f){
+    var v=A[f], cls='pair'+(afield===f?' on':'')+(v===''?' off':'');
+    return '<span class="tcol"><span class="tlab">'+label+'</span>'+
+           '<span class="'+cls+'" data-a="'+f+'">'+pad2(v)+'</span></span>';
+  }
+  function alarmKey(k){
+    if(k==='go'){ return alarmAt ? disarmAlarm() : armAlarm(); }
+    if(alarmAt) return;
+    if(k==='dot'){ afield = afield==='hr'?'min':'hr'; return draw(); }
+    if(k==='div'){ A.hr=pad2((+(A.hr||0)+1)%24); }
+    else if(k==='mul'){ A.min=pad2((+(A.min||0)+10)%60); }
+    else if(k==='sub'){ A.min=pad2((+(A.min||0)+50)%60); }
+    else if(k==='add'){ A.hr=''; A.min=''; afield='hr'; }
+    else if(/^\d$/.test(k)){
+      var cap = afield==='hr' ? 23 : 59;
+      var v=((A[afield]==='00'?'':A[afield])+k).slice(-2);
+      if(parseInt(v,10)>cap) v=k;
+      A[afield]=v;
+    }
+    else if(k==='dbl0') A[afield]='00';
+    else if(k==='back') A[afield]=A[afield].slice(0,-1);
+    else if(k==='clear'){ A.hr=''; A.min=''; afield='hr'; }
+    else return;
+    draw();
+  }
+
   /* ── 그리기 ───────────────────────── */
   function draw(){
     var ops=document.querySelectorAll('.key.op'), i;
 
+    if(mode==='comp'){
+      $readout.style.display='none'; $dial.classList.remove('on');
+      $('keys').classList.add('hide'); $('run').classList.remove('on');
+      $bridge.style.display='none'; $('comp').classList.add('on');
+      return;
+    }
+    $('comp').classList.remove('on');
+    if(mode==='alarm'){
+      $bridge.style.display='none';
+      for(i=0;i<ops.length;i++) ops[i].classList.remove('armed');
+      if(!alarmAt){
+        $vin.innerHTML='<span class="tset">'+acol('시','hr')+
+          '<span class="tsep">:</span>'+acol('분','min')+'</span>';
+        $trail.textContent='칸을 눌러 고르고 입력하세요';
+      } else drawAlarmDial();
+      panels(); fitValue(); return;
+    }
+    $bridge.style.display='';
     if(mode==='calc'){
       $vin.textContent = cur==='오류' ? '오류' : fmt(parseFloat(cur))+(/\.$/.test(cur)?'.':'');
       $trail.textContent = acc===null ? '' : fmt(acc)+' '+SYM[op];
@@ -378,28 +566,39 @@
   }
 
   function panels(){
-    var run = (mode==='timer' && !editing());
+    var run = (mode==='alarm') ? alarmAt>0 : (mode==='timer' && !editing());
     $readout.style.display = run ? 'none' : '';
     $dial.classList.toggle('on', run);
     $('keys').classList.toggle('hide', run);
     $('run').classList.toggle('on', run);
     if(run){
       var g=$('rGo');
-      g.textContent = running ? '일시정지' : (left<=0 ? '다시 시작' : '계속');
-      g.classList.toggle('resume', !running);
+      if(mode==='alarm'){
+        $('rCancel').textContent='해제';
+        g.textContent = ringing ? '끄기' : '시간 변경';
+        g.classList.toggle('resume', !ringing);
+      } else {
+        $('rCancel').textContent='취소';
+        g.textContent = running ? '일시정지' : (left<=0 ? '다시 시작' : '계속');
+        g.classList.toggle('resume', !running);
+      }
     }
   }
 
   /* ── 모드 ─────────────────────────── */
   var LABEL={
     calc:{clear:'AC',back:'⌫',dbl0:'00',div:'÷',mul:'×',sub:'−',add:'+',pct:'%',dot:'.',go:'='},
-    timer:{clear:'AC',back:'⌫',dbl0:'00',div:'+1분',mul:'+5분',sub:'−1분',add:'리셋',pct:'',dot:'칸이동',go:'시작'}
+    timer:{clear:'AC',back:'⌫',dbl0:'00',div:'+1분',mul:'+5분',sub:'−1분',add:'리셋',pct:'',dot:'칸이동',go:'시작'},
+    alarm:{clear:'AC',back:'⌫',dbl0:'00',div:'+1시간',mul:'+10분',sub:'−10분',add:'초기화',pct:'',dot:'칸이동',go:'설정'}
   };
   function setMode(m){
     mode=m; lastFit=null;
     $('mCalc').classList.toggle('on',m==='calc');
     $('mTime').classList.toggle('on',m==='timer');
-    $('keys').classList.toggle('tmode', m==='timer');
+    $('mAlarm').classList.toggle('on',m==='alarm');
+    $('mComp').classList.toggle('on',m==='comp');
+    $('keys').classList.toggle('tmode', m!=='calc');
+    if(m==='comp'){ draw(); return; }
     var keys=document.querySelectorAll('.key');
     for(var i=0;i<keys.length;i++){
       var k=keys[i].dataset.k, L=LABEL[m][k];
@@ -410,6 +609,8 @@
   function syncGo(){
     var g=document.querySelector('.key.eq');
     if(mode==='calc'){ g.textContent='='; g.classList.remove('running'); return; }
+    if(mode==='alarm'){ g.textContent = alarmAt ? '해제' : '설정';
+                        g.classList.toggle('running', !!alarmAt); return; }
     g.classList.toggle('running',running);
     g.textContent = running ? '일시정지' : (endAt && left>0 ? '이어서' : '시작');
   }
@@ -503,7 +704,9 @@
   }
 
   /* ── 키 입력 ──────────────────────── */
-  function press(k){ return mode==='calc' ? calcKey(k) : timerKey(k); }
+  function press(k){
+    return mode==='calc' ? calcKey(k) : (mode==='alarm' ? alarmKey(k) : timerKey(k));
+  }
 
   function calcKey(k){
     if(/^\d$/.test(k)){
@@ -581,7 +784,9 @@
 
   $val.addEventListener('click',function(e){
     var p=e.target.closest('.pair');
-    if(p && mode==='timer'){ field=p.dataset.f; draw(); }
+    if(!p) return;
+    if(mode==='timer' && p.dataset.f){ field=p.dataset.f; draw(); }
+    if(mode==='alarm' && p.dataset.a){ afield=p.dataset.a; draw(); }
   });
   function hitKey(e){
     var b=e.target.closest('button');
@@ -595,10 +800,10 @@
     $('keys').addEventListener('touchstart',hitKey,{passive:false});
     $('keys').addEventListener('click',hitKey);
   }
-  $('rCancel').addEventListener('click',function(){ stopAlarm(); resetTimer(); });
-  $('rGo').addEventListener('click',function(){ stopAlarm(); running?pause():start(); });
+  $('rCancel').addEventListener('click',function(){ stopAlarm(); mode==='alarm'?disarmAlarm():resetTimer(); });
+  $('rGo').addEventListener('click',function(){ stopAlarm(); if(mode==='alarm') return disarmAlarm(); running?pause():start(); });
 
-  var size=1;
+  var size=2;   /* 기본을 '가+' 크기로 */
   $('mSize').addEventListener('click',function(){
     size = size===3 ? 1 : size+1;
     document.body.classList.remove('s2','s3');
@@ -606,8 +811,91 @@
     this.textContent=['가','가+','가++'][size-1];
     lastFit=null; fitValue(true);
   });
+  /* ── 음성으로 조작 ────────────────── */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var KNUM={'한':'1','두':'2','세':'3','네':'4','다섯':'5','여섯':'6','일곱':'7',
+            '여덟':'8','아홉':'9','열':'10','스물':'20','서른':'30'};
+
+  function say(msg){ $trail.textContent=msg; }
+
+  function handleVoice(text, always){
+    var t=text.replace(/\s+/g,'');
+    var cmd=/타이머|알람|맞춰|시작|정지|멈춰|취소|해제|계산/.test(t);
+    if(always && !cmd) return;               // 지나가는 말에는 반응하지 않음
+    for(var w in KNUM) t=t.split(w+'시간').join(KNUM[w]+'시간')
+                          .split(w+'분').join(KNUM[w]+'분')
+                          .split(w+'초').join(KNUM[w]+'초');
+
+    var ct=t.match(/(\d+)시(?!간)/);
+    if(ct && /알람|깨워/.test(t)){
+      var hh=+ct[1], mm=t.match(/(\d+)분/);
+      if(/오후|저녁|밤/.test(t) && hh<12) hh+=12;
+      if(/오전|아침/.test(t) && hh===12) hh=0;
+      if(mode!=='alarm') setMode('alarm');
+      disarmAlarm();
+      A.hr=pad2(hh%24); A.min=mm?pad2(Math.min(59,+mm[1])):'00';
+      armAlarm(); return say('“'+text+'” 알람 설정');
+    }
+    var h=t.match(/(\d+)\s*시간/), m=t.match(/(\d+)\s*분/), q=t.match(/(\d+)\s*초/);
+
+    if(h||m||q){
+      if(mode!=='timer') setMode('timer');
+      running=false; clearInterval(tick); tick=null;
+      F.hr  = h ? String(Math.min(99,+h[1])).padStart(2,'0') : '00';
+      F.min = m ? String(Math.min(59,+m[1])).padStart(2,'0') : '00';
+      F.sec = q ? String(Math.min(59,+q[1])).padStart(2,'0') : '00';
+      total=entryMs(); left=total; endAt=0; syncGo(); draw();
+      if(/시작|맞춰|맞춰줘|해줘|알람|타이머|재줘|세줘/.test(t)) start();
+      say('“'+text+'” 인식');
+      return;
+    }
+    if(/취소|해제|지워|초기화/.test(t)){ stopAlarm(); resetTimer(); return say('취소했습니다'); }
+    if(/정지|멈춰|일시정지|스톱/.test(t)){ if(running) pause(); return say('일시정지'); }
+    if(/시작|계속|고|출발/.test(t)){ if(!running) start(); return say('시작합니다'); }
+    if(/계산/.test(t)){ setMode('calc'); return say('계산기'); }
+    if(/타이머/.test(t)){ setMode('timer'); return say('타이머'); }
+    say('“'+text+'” — 알아듣지 못했어요');
+  }
+
+  var rec=null, micOn=false, restartT=null;
+
+  function spawn(){
+    try{
+      rec=new SR();
+      rec.lang='ko-KR'; rec.continuous=true; rec.interimResults=false; rec.maxAlternatives=1;
+      rec.onresult=function(e){
+        for(var i=e.resultIndex;i<e.results.length;i++)
+          if(e.results[i].isFinal) handleVoice(e.results[i][0].transcript, true);
+      };
+      rec.onerror=function(ev){
+        if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){
+          micOff(); say('마이크 권한이 필요합니다');
+        }
+      };
+      rec.onend=function(){
+        if(micOn) restartT=setTimeout(spawn,400);   // 조용하면 끊기므로 다시 켬
+        else $('mMic').classList.remove('rec');
+      };
+      rec.start();
+    }catch(e){}
+  }
+  function micOn_(){
+    if(!SR){ say('이 브라우저는 음성 인식을 지원하지 않습니다'); return; }
+    ensureAudio();
+    micOn=true; $('mMic').classList.add('rec'); say('듣고 있습니다 — “5분 타이머”');
+    spawn();
+  }
+  function micOff(){
+    micOn=false; clearTimeout(restartT);
+    try{ if(rec) rec.stop(); }catch(e){}
+    $('mMic').classList.remove('rec'); say('음성 대기 꺼짐');
+  }
+  $('mMic').addEventListener('click',function(){ micOn ? micOff() : micOn_(); });
+
   $('mCalc').addEventListener('click',function(){setMode('calc')});
   $('mTime').addEventListener('click',function(){setMode('timer')});
+  $('mAlarm').addEventListener('click',function(){setMode('alarm')});
+  $('mComp').addEventListener('click',function(){setMode('comp')});
 
   document.addEventListener('keydown',function(e){
     var k=e.key;
@@ -619,7 +907,7 @@
     else if(k==='Backspace') press('back');
     else if(k==='Escape') press('clear');
     else if(k==='%') press('pct');
-    else if(k==='Tab'){e.preventDefault();setMode(mode==='calc'?'timer':'calc');}
+    else if(k==='Tab'){e.preventDefault();setMode(mode==='calc'?'timer':(mode==='timer'?'alarm':'calc'));}
   });
   document.addEventListener('visibilitychange',function(){
     if(!document.hidden && running){ frame(); wake(true); }
@@ -631,6 +919,8 @@
       screen.orientation.lock('portrait').catch(function(){});
   }catch(e){}
 
+  document.body.classList.add('s2');
+  $('mSize').textContent='가+';
   setMode('calc');
 })();
 </script>
