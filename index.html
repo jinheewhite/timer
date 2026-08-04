@@ -422,13 +422,52 @@
         $('tVal').textContent=Math.round(c.temperature_2m*10)/10+'°';
         $('tFeel').textContent=Math.round(c.apparent_temperature)+'°';
         $('tHum').textContent=c.relative_humidity_2m+'%';
-        var n=new Date();
-        $('tPlace').textContent='위도 '+la+' 경도 '+lo+' · '+
-          String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+' 기준';
         tAt=Date.now();
+        showPlace('위치 확인 중…');
+        placeName(la,lo);
       }).catch(function(){ $('tPlace').textContent='기온을 불러오지 못했습니다'; });
     },function(){ $('tPlace').textContent='위치 권한이 필요합니다'; },
       {enableHighAccuracy:false,timeout:10000,maximumAge:600000});
+  }
+  function showPlace(name){
+    var n=new Date();
+    $('tPlace').textContent = name+' · '+
+      String(n.getHours()).padStart(2,'0')+':'+
+      String(n.getMinutes()).padStart(2,'0')+' 기준';
+  }
+  /* 좌표 → 동 이름 */
+  function placeName(la,lo){
+    fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+la+
+          '&longitude='+lo+'&localityLanguage=ko')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var adm=(d.localityInfo && d.localityInfo.administrative) || [];
+        var names=adm.map(function(x){ return x.name; });
+        names.push(d.city, d.locality);
+        var out=[], seen={};
+        names.forEach(function(v){
+          if(!v || seen[v]) return;
+          if(/대한민국|South Korea|도$|특별시$|광역시$/.test(v) && out.length) return;
+          seen[v]=1; out.push(v);
+        });
+        var pick=out.slice(-2).join(' ');
+        if(!pick) throw 0;
+        showPlace(pick);
+      })
+      .catch(function(){ nominatim(la,lo); });
+  }
+  function nominatim(la,lo){
+    fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+la+
+          '&lon='+lo+'&accept-language=ko&zoom=16')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var a=d.address||{};
+        var dong=a.quarter||a.neighbourhood||a.suburb||a.village||a.town||'';
+        var gu=a.borough||a.city_district||a.county||a.city||'';
+        var pick=[gu,dong].filter(Boolean).join(' ');
+        showPlace(pick || '위도 '+la+' 경도 '+lo);
+      })
+      .catch(function(){ showPlace('위도 '+la+' 경도 '+lo); });
   }
   $('tRefresh').addEventListener('click',function(){ loadTemp(true); });
 
