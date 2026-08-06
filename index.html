@@ -40,7 +40,7 @@
   }
 
   /* 모드 전환 */
-  .seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
+  .seg{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;
        background:rgba(0,0,0,.25);border-radius:999px;padding:4px}
   .seg button{
     appearance:none;border:0;background:transparent;color:var(--dim);
@@ -138,6 +138,33 @@
   .tnote{font:400 clamp(10px,calc(1.3vh*var(--z)),15px)/1.4 -apple-system,sans-serif;
          color:var(--dim);opacity:.7;margin-top:clamp(10px,2vh,20px);text-align:center}
 
+  .conv{display:none;flex-direction:column;justify-content:center;flex:1;
+        gap:clamp(8px,1.6vh,16px);padding:clamp(10px,2vh,28px) 0}
+  .conv.on{display:flex}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;
+         margin-bottom:clamp(4px,1vh,12px)}
+  .chip{appearance:none;border:1px solid var(--line);background:transparent;color:var(--dim);
+        border-radius:999px;padding:clamp(7px,1.3vh,12px) clamp(12px,3vw,18px);cursor:pointer;
+        font:500 clamp(12px,calc(1.7vh*var(--z)),18px)/1 -apple-system,sans-serif}
+  .chip.on{background:var(--raise);color:var(--chalk);border-color:var(--raise)}
+  .cvbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+         padding:clamp(10px,1.8vh,18px) clamp(12px,2.2vh,20px);
+         display:flex;align-items:center;gap:10px}
+  .cvin,.cvout{flex:1;min-width:0;background:transparent;border:0;color:var(--chalk);
+        font:600 clamp(26px,calc(4.4vh*var(--z)),54px)/1.1 ui-monospace,"SF Mono",Menlo,monospace;
+        font-variant-numeric:tabular-nums;text-align:right;outline:none;width:100%}
+  .cvout{color:var(--mint);overflow:hidden;white-space:nowrap}
+  .cvsel{background:var(--raise);color:var(--chalk);border:1px solid var(--line);
+         border-radius:10px;padding:clamp(6px,1.2vh,11px) clamp(6px,1.6vw,10px);
+         font:500 clamp(13px,calc(1.9vh*var(--z)),20px)/1 -apple-system,sans-serif;
+         max-width:42%}
+  .cvswap{appearance:none;align-self:center;border:1px solid var(--line);background:var(--raise);
+          color:var(--amber);border-radius:50%;width:2.6em;height:2.6em;cursor:pointer;
+          font-size:clamp(14px,calc(2vh*var(--z)),20px);line-height:1}
+  .cvswap:active{transform:scale(.94)}
+  .cvnote{font:400 clamp(10px,calc(1.4vh*var(--z)),16px)/1.4 -apple-system,sans-serif;
+          color:var(--dim);opacity:.8;text-align:center;min-height:1.4em}
+
   /* 값 전달 바 */
   .bridge{
     appearance:none;width:100%;border:1px dashed var(--line);background:transparent;
@@ -216,10 +243,11 @@
 
   <div class="seg" role="tablist">
     <button id="mCalc" class="on" role="tab" aria-label="계산">🧮</button>
-    <button id="mTime" role="tab" aria-label="타이머">⏱️</button>
+    <button id="mTime" role="tab" aria-label="타이머">⏳</button>
     <button id="mAlarm" role="tab" aria-label="알람">⏰</button>
     <button id="mComp" role="tab" aria-label="나침반">🧭</button>
     <button id="mTemp" role="tab" aria-label="온도">🌡️</button>
+    <button id="mConv" role="tab" aria-label="단위변환">🔄</button>
   </div>
 
   <div class="readout" id="readout">
@@ -268,6 +296,24 @@
     </div>
     <button class="bridge" id="tRefresh" style="margin-top:18px;max-width:280px">새로고침</button>
     <div class="tnote" id="tNote">실내 온도가 아닙니다</div>
+  </div>
+
+  <div class="conv" id="conv">
+    <div class="chips" id="cvChips"></div>
+
+    <div class="cvbox">
+      <input class="cvin" id="cvIn" inputmode="decimal" value="1">
+      <select class="cvsel" id="cvFrom"></select>
+    </div>
+
+    <button class="cvswap" id="cvSwap" aria-label="위아래 바꾸기">⇅</button>
+
+    <div class="cvbox">
+      <div class="cvout" id="cvOut">0</div>
+      <select class="cvsel" id="cvTo"></select>
+    </div>
+
+    <div class="cvnote" id="cvNote"></div>
   </div>
 
   <button class="bridge" id="bridge">계산 결과를 타이머 시간으로 보내기</button>
@@ -406,6 +452,97 @@
     else if(done){ e.classList.remove('off'); e.textContent='완료'; }
     else { e.classList.remove('off'); e.textContent='일시정지'; }
   }
+
+  /* ── 단위 변환 ─────────────────────── */
+  var CV = {
+    len:{name:'길이', base:'m', u:[['mm',.001],['cm',.01],['m',1],['km',1000],
+        ['인치',.0254],['피트',.3048],['야드',.9144],['마일',1609.344],['자(尺)',.30303]]},
+    wgt:{name:'무게', base:'g', u:[['g',1],['kg',1000],['t',1000000],
+        ['근',600],['관',3750],['온스',28.349523],['파운드',453.59237]]},
+    are:{name:'넓이', base:'㎡', u:[['평',3.3057851],['㎡',1],['㎠',.0001],
+        ['㎢',1000000],['헥타르',10000],['에이커',4046.8564]]},
+    vol:{name:'부피', base:'mL', u:[['mL',1],['L',1000],['되',1800],['말',18000],
+        ['갤런',3785.41],['컵',200]]},
+    cur:{name:'환율', money:true, u:[['원',1],['달러',1400],['유로',1520],
+        ['엔',9.2],['위안',196],['파운드',1780],['호주달러',920]]}
+  };
+  var cvCat='len', cvRatesAt=0;
+
+  function cvBuild(keep){
+    var c=CV[cvCat], f=$('cvFrom'), t=$('cvTo'), i;
+    var kf=f.value, kt=t.value;
+    f.innerHTML=''; t.innerHTML='';
+    for(i=0;i<c.u.length;i++){
+      var o1=document.createElement('option'), o2=document.createElement('option');
+      o1.value=o2.value=i; o1.textContent=o2.textContent=c.u[i][0];
+      f.appendChild(o1); t.appendChild(o2);
+    }
+    /* 기본 조합 */
+    if(keep && kf!=='' && kt!==''){ f.value=kf; t.value=kt; }
+    else {
+      var pick={len:[1,4], wgt:[1,6], are:[0,1], vol:[1,0], cur:[0,1]};
+      f.value=pick[cvCat][0]; t.value=Math.min(pick[cvCat][1], c.u.length-1);
+    }
+    cvCalc();
+  }
+  function cvChips(){
+    var box=$('cvChips'); box.innerHTML='';
+    for(var k in CV){
+      var b=document.createElement('button');
+      b.className='chip'+(k===cvCat?' on':''); b.textContent=CV[k].name; b.dataset.k=k;
+      box.appendChild(b);
+    }
+  }
+  function cvFmt(n){
+    if(!isFinite(n)) return '—';
+    var a=Math.abs(n);
+    if(a!==0 && (a>=1e12||a<1e-6)) return n.toExponential(4);
+    var s=String(parseFloat(n.toFixed(a<1?6:(a<100?4:2))));
+    var p=s.split('.');
+    p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    return p.join('.');
+  }
+  function cvCalc(){
+    var c=CV[cvCat], v=parseFloat($('cvIn').value);
+    if(isNaN(v)){ $('cvOut').textContent='—'; return; }
+    var fi=+$('cvFrom').value, ti=+$('cvTo').value;
+    var out;
+    out = v*c.u[fi][1]/c.u[ti][1];
+    $('cvOut').textContent=cvFmt(out);
+  }
+  /* 환율 받아오기 */
+  function cvRates(){
+    if(Date.now()-cvRatesAt < 3600000){ $('cvNote').textContent='유럽중앙은행 고시 기준'; return; }
+    $('cvNote').textContent='환율 불러오는 중…';
+    fetch('https://api.frankfurter.app/latest?from=KRW&to=USD,EUR,JPY,CNY,GBP,AUD')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var map=[['원',1],['달러',1/d.rates.USD],['유로',1/d.rates.EUR],
+                 ['엔',1/d.rates.JPY],['위안',1/d.rates.CNY],
+                 ['파운드',1/d.rates.GBP],['호주달러',1/d.rates.AUD]];
+        CV.cur.u=map; cvRatesAt=Date.now();
+        $('cvNote').textContent='기준일 '+d.date+' · 유럽중앙은행 고시';
+        if(cvCat==='cur') cvBuild(true);
+      })
+      .catch(function(){ $('cvNote').textContent='환율을 불러오지 못했습니다 (인터넷 필요)'; });
+  }
+  function cvSetCat(k){
+    cvCat=k; cvChips();
+    $('cvNote').textContent = (k==='cur') ? '어림값입니다 — 최신 환율 확인 중…'
+                            : (k==='are' ? '1평 = 3.3058㎡' : '');
+    if(k==='cur') cvRates();
+    cvBuild();
+  }
+  $('cvChips').addEventListener('click',function(e){
+    var b=e.target.closest('.chip'); if(b) cvSetCat(b.dataset.k);
+  });
+  $('cvIn').addEventListener('input',cvCalc);
+  $('cvFrom').addEventListener('change',cvCalc);
+  $('cvTo').addEventListener('change',cvCalc);
+  $('cvSwap').addEventListener('click',function(){
+    var a=$('cvFrom').value; $('cvFrom').value=$('cvTo').value; $('cvTo').value=a;
+    cvCalc();
+  });
 
   /* ── 바깥 기온 ─────────────────────── */
   var tAt=0;
@@ -667,6 +804,14 @@
   function draw(){
     var ops=document.querySelectorAll('.key.op'), i;
 
+    if(mode==='conv'){
+      $readout.style.display='none'; $dial.classList.remove('on');
+      $('keys').classList.add('hide'); $('run').classList.remove('on');
+      $bridge.style.display='none'; $('comp').classList.remove('on');
+      $('temp').classList.remove('on'); $('conv').classList.add('on');
+      return;
+    }
+    $('conv').classList.remove('on');
     if(mode==='temp'){
       $readout.style.display='none'; $dial.classList.remove('on');
       $('keys').classList.add('hide'); $('run').classList.remove('on');
@@ -771,8 +916,9 @@
     $('mAlarm').classList.toggle('on',m==='alarm');
     $('mComp').classList.toggle('on',m==='comp');
     $('mTemp').classList.toggle('on',m==='temp');
+    $('mConv').classList.toggle('on',m==='conv');
     $('keys').classList.toggle('tmode', m!=='calc');
-    if(m==='comp'||m==='temp'){ draw(); return; }
+    if(m==='comp'||m==='temp'||m==='conv'){ draw(); return; }
     var keys=document.querySelectorAll('.key');
     for(var i=0;i<keys.length;i++){
       var k=keys[i].dataset.k, L=LABEL[m][k];
@@ -999,6 +1145,7 @@
   $('mAlarm').addEventListener('click',function(){setMode('alarm')});
   $('mComp').addEventListener('click',function(){setMode('comp')});
   $('mTemp').addEventListener('click',function(){setMode('temp')});
+  $('mConv').addEventListener('click',function(){setMode('conv')});
 
   document.addEventListener('keydown',function(e){
     var k=e.key;
@@ -1023,6 +1170,7 @@
   }catch(e){}
 
   renderCompass();
+  cvSetCat('len');
   setMode('calc');
 })();
 </script>
