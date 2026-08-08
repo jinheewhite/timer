@@ -350,6 +350,10 @@
     <button class="rbtn act" id="rGo">일시정지</button>
   </div>
 
+  <video id="keepAwake" muted loop playsinline webkit-playsinline
+         style="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-10px;top:-10px"
+         src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMXbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAA+gAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAkF0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAA+gAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAIAAAACAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAPoAAAAAAABAAAAAAG5bWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAQABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABZG1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAASRzdGJsAAAAwHN0c2QAAAAAAAAAAQAAALBhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAIAAgBIAAAASAAAAAAAAAABFUxhdmM2MC4zMS4xMDIgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAANmF2Y0MBZAAK/+EAGWdkAAqs2V+IiMBEAAADAAQAAAMACDxIllgBAAZo6+PLIsD9+PgAAAAAEHBhc3AAAAABAAAAAQAAABRidHJ0AAAAAAAAFigAABYoAAAAGHN0dHMAAAAAAAAAAQAAAAEAAEAAAAAAHHN0c2MAAAAAAAAAAQAAAAEAAAABAAAAAQAAABRzdHN6AAAAAAAAAsUAAAABAAAAFHN0Y28AAAAAAAAAAQAAA0cAAABidWR0YQAAAFptZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjYwLjE2LjEwMAAAAAhmcmVlAAACzW1kYXQAAAKtBgX//6ncRem95tlIt5Ys2CDZI+7veDI2NCAtIGNvcmUgMTY0IHIzMTA4IDMxZTE5ZjkgLSBILjI2NC9NUEVHLTQgQVZDIGNvZGVjIC0gQ29weWxlZnQgMjAwMy0yMDIzIC0gaHR0cDovL3d3dy52aWRlb2xhbi5vcmcveDI2NC5odG1sIC0gb3B0aW9uczogY2FiYWM9MSByZWY9MyBkZWJsb2NrPTE6MDowIGFuYWx5c2U9MHgzOjB4MTEzIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0xLjAwOjAuMDAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0xIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS0yIHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTMgYl9weXJhbWlkPTIgYl9hZGFwdD0xIGJfYmlhcz0wIGRpcmVjdD0xIHdlaWdodGI9MSBvcGVuX2dvcD0wIHdlaWdodHA9MiBrZXlpbnQ9MjUwIGtleWludF9taW49MSBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmNfbG9va2FoZWFkPTQwIHJjPWNyZiBtYnRyZWU9MSBjcmY9MjMuMCBxY29tcD0wLjYwIHFwbWluPTAgcXBtYXg9NjkgcXBzdGVwPTQgaXBfcmF0aW89MS40MCBhcT0xOjEuMDAAgAAAABBliIQAFf/+98nvwKbr29+B"></video>
+
   <div class="foot">
     <span></span>
     <span class="credit">만든이 진희짱</span>
@@ -448,7 +452,8 @@
     $('dSet').textContent = durText(total);
     $('dLeft').textContent = timeText(left);
     var e=$('dEnd');
-    if(running){ e.classList.remove('off'); e.textContent=endText(left); }
+    if(running){ e.classList.remove('off');
+      e.textContent=endText(left)+(lock?'  ·  ● 화면 유지 중':'  ·  화면 유지 안 됨'); }
     else if(done){ e.classList.remove('off'); e.textContent='완료'; }
     else { e.classList.remove('off'); e.textContent='일시정지'; }
   }
@@ -752,11 +757,12 @@
   function armAlarm(){
     if(A.hr==='' && A.min==='') return;
     alarmAt=alarmMs(); aFrom=Date.now(); ringing=false;
-    askNotify(function(){ ongoing('⏰ 알람 설정됨', hhmm(alarmAt)+' 에 울립니다'); });
+    askNotify();
     clearInterval(aTick);
     aTick=setInterval(function(){
+      if(alarmAt && !lock && !document.hidden) wake(true);
       if(!ringing && alarmAt && Date.now()>=alarmAt){ ringing=true; alarm(); }
-      if(!ringing && alarmAt && Date.now()-ongoAt>30000)
+      if(document.hidden && !ringing && alarmAt && Date.now()-ongoAt>30000)
         ongoing('⏰ 알람 설정됨', hhmm(alarmAt)+' 에 울립니다');
       if(mode==='alarm') draw();
     },1000);
@@ -942,19 +948,21 @@
     if(left<=0){ total=entryMs(); left=total; }
     if(left<=0) return;
     ensureAudio(); stopAlarm();
-    askNotify(function(){ ongoing('⏳ 타이머 진행 중','남은 시간 '+timeText(left)); });
+    askNotify();
     running=true; endAt=Date.now()+left;
     tick=setInterval(frame,200); wake(true); syncGo(); draw();
   }
   function pause(){
     running=false; left=Math.max(0,endAt-Date.now());
     clearInterval(tick); tick=null; wake(false);
-    ongoing('⏸ 타이머 일시정지','남은 시간 '+timeText(left));
+    if(document.hidden) ongoing('⏸ 타이머 일시정지','남은 시간 '+timeText(left));
+    else clearOngoing();
     syncGo(); draw();
   }
   function frame(){
     left=endAt-Date.now();
-    if(running && left>0 && Date.now()-ongoAt>5000)
+    if(running && !lock && !document.hidden) wake(true);   // 풀렸으면 다시 잡기
+    if(document.hidden && running && left>0 && Date.now()-ongoAt>5000)
       ongoing('⏳ 타이머 진행 중','남은 시간 '+timeText(left));
     if(left<=0){ left=0; running=false; clearInterval(tick); tick=null; wake(false); alarm(); syncGo(); }
     draw();
@@ -975,16 +983,36 @@
     $wl.textContent=t[state]||'';
     $wl.className='wl'+(state==='on'?' on':(state==='off'?'':' warn'));
   }
+  /* 보조 수단 — 잠금이 안 걸릴 때 작은 무음 영상을 재생해 화면을 붙잡음 */
+  function video(on){
+    try{
+      var v=$('keepAwake');
+      if(on){ if(v.paused){ var pr=v.play(); if(pr&&pr.catch) pr.catch(function(){}); } }
+      else { v.pause(); }
+    }catch(e){}
+  }
+
+  var wakeBusy=false, wakeTry=0;
   function wake(on){
-    if(!on){ if(lock){ try{lock.release()}catch(e){} lock=null; } badge('off'); return; }
+    if(!on){
+      wakeBusy=false; video(false);
+      if(lock){ try{lock.release()}catch(e){} lock=null; }
+      badge('off'); return;
+    }
+    video(true);                                  // 보조 수단은 항상 켜둠
     if(!navigator.wakeLock){ badge('none'); return; }
-    if(lock) return;
+    if(lock || wakeBusy) return;                 // 이미 걸렸거나 요청 중이면 그냥 둠
+    if(Date.now()-wakeTry < 2000) return;        // 최소 2초 간격
+    wakeTry=Date.now(); wakeBusy=true;
     try{
       navigator.wakeLock.request('screen').then(function(s){
-        lock=s; badge('on');
-        s.addEventListener('release',function(){ lock=null; badge(running?'failed':'off'); });
-      }).catch(function(){ badge('failed'); });
-    }catch(e){ badge('failed'); }
+        wakeBusy=false; lock=s; badge('on');
+        s.addEventListener('release',function(){
+          lock=null;
+          badge((running||alarmAt)?'failed':'off');
+        });
+      }).catch(function(){ wakeBusy=false; badge('failed'); });
+    }catch(e){ wakeBusy=false; badge('failed'); }
   }
   var alarmTimer=null, ac=null;
   function ensureAudio(){
@@ -1168,6 +1196,7 @@
     var b=e.target.closest('button');
     if(!b) return;
     e.preventDefault();
+    if((running||alarmAt) && !lock) wake(true);
     stopAlarm(); press(b.dataset.k);
   }
   if(window.PointerEvent){
@@ -1202,7 +1231,10 @@
     if(document.hidden){
       if(running) ongoing('⏳ 타이머 진행 중','남은 시간 '+timeText(left));
       else if(alarmAt) ongoing('⏰ 알람 설정됨', hhmm(alarmAt)+' 에 울립니다');
-    } else if(running){ frame(); wake(true); }
+    } else {
+      clearOngoing();                 // 앱을 보고 있을 땐 알림 없음
+      if(running){ frame(); wake(true); }
+    }
   });
   window.addEventListener('resize',function(){ fitValue(true); });
 
